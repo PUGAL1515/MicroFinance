@@ -1,50 +1,82 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import RD from "./pages/RD";
+import FD from "./pages/FD";
+import GroupLoans from "./pages/GroupLoans";
+import Reports from "./pages/Reports";
+import Users from "./pages/Users";
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl">
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-2xl text-white">
-          ₹
-        </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
 
-        <h1 className="text-3xl font-bold text-slate-900">
-          Microfinance System
-        </h1>
+          {/* Protected routes with Sidebar */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
 
-        <p className="mt-2 text-slate-500">
-          Tailwind CSS styling test
-        </p>
+            <Route
+              path="/rd"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN", "RD_FD_ADMIN"]}>
+                  <RD />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fd"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN", "RD_FD_ADMIN"]}>
+                  <FD />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/group-loans"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
+                  <GroupLoans />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-        <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
-          <p className="font-semibold text-green-700">
-            ✓ CSS is working!
-          </p>
-          <p className="mt-1 text-sm text-green-600">
-            React and Tailwind CSS are connected successfully.
-          </p>
-        </div>
-
-        <button
-          className="mt-6 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
-          onClick={() => alert("Tailwind CSS and React are working!")}
-        >
-          Test Button
-        </button>
-
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="rounded-lg bg-indigo-50 p-4">
-            <p className="text-sm text-indigo-600">Total Customers</p>
-            <p className="mt-2 text-2xl font-bold text-indigo-900">250</p>
-          </div>
-
-          <div className="rounded-lg bg-emerald-50 p-4">
-            <p className="text-sm text-emerald-600">Active Loans</p>
-            <p className="mt-2 text-2xl font-bold text-emerald-900">120</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
