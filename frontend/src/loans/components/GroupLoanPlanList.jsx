@@ -1,4 +1,3 @@
-
 import { formatINR } from "./GroupLoanStats";
 
 export default function GroupLoanPlanList({ plans, onCreate, onEdit }) {
@@ -6,9 +5,7 @@ export default function GroupLoanPlanList({ plans, onCreate, onEdit }) {
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
-            Group Loan Plans
-          </h2>
+          <h2 className="text-lg font-bold text-slate-900">Group Loan Plans</h2>
           <p className="mt-1 text-sm text-slate-500">
             Manage loan rules and member limits.
           </p>
@@ -23,9 +20,7 @@ export default function GroupLoanPlanList({ plans, onCreate, onEdit }) {
 
       {plans.length === 0 ? (
         <div className="p-12 text-center">
-          <p className="font-semibold text-slate-700">
-            No loan plans found
-          </p>
+          <p className="font-semibold text-slate-700">No loan plans found</p>
           <p className="mt-1 text-sm text-slate-500">
             Create your first Group Loan Plan.
           </p>
@@ -54,12 +49,8 @@ export default function GroupLoanPlanList({ plans, onCreate, onEdit }) {
               {plans.map((plan) => (
                 <tr key={plan.id} className="hover:bg-slate-50">
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-slate-900">
-                      {plan.name}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      ID: {plan.id}
-                    </p>
+                    <p className="font-semibold text-slate-900">{plan.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">ID: {plan.id}</p>
                   </td>
                   <td className="px-5 py-4">
                     {plan.min_members}–{plan.max_members}

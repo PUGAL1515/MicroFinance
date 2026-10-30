@@ -10,6 +10,11 @@ import FD from "./pages/FD";
 import GroupLoans from "./pages/GroupLoans";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
+import CustomerManagement from "./customer/components/CustomerManagement";
+import GroupLoanManagement from "./loans/pages/GroupLoanManagement";
+import KYCVerification from "./customer/components/KYCVerification";
+import ApprovedLoansDashboard from "./loans/pages/ApprovedLoansDashboard";
+import GroupCollection from "./loans/components/GroupCollection";
 
 function App() {
   return (
@@ -49,7 +54,7 @@ function App() {
               path="/group-loans"
               element={
                 <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
-                  <GroupLoans />
+                  <GroupLoanManagement/>
                 </ProtectedRoute>
               }
             />
@@ -69,8 +74,30 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/customers" element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
+              <CustomerManagement/>
+              </ProtectedRoute>
+            } />
+            <Route path="/kyc-verification" element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
+                <KYCVerification/>
+              </ProtectedRoute>
+            } />
           </Route>
-
+           <Route path="/approved-loans" element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
+                <ApprovedLoansDashboard/>
+              </ProtectedRoute>
+            } />
+            <Route
+  path="/group-loan/applications/:applicationId/collections"
+  element={
+    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]}>
+      <GroupCollection/>
+    </ProtectedRoute>
+  }
+/>
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

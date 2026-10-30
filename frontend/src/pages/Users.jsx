@@ -148,7 +148,9 @@ const Users = () => {
       GROUP_LOAN_ADMIN: "Group Loan Admin",
     };
     return (
-      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[role] || "bg-slate-100 text-slate-600"}`}>
+      <span
+        className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[role] || "bg-slate-100 text-slate-600"}`}
+      >
         {labels[role] || role}
       </span>
     );
@@ -160,7 +162,9 @@ const Users = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">User Management</h1>
-          <p className="text-slate-500 mt-1">Create and manage staff accounts</p>
+          <p className="text-slate-500 mt-1">
+            Create and manage staff accounts
+          </p>
         </div>
         <button
           onClick={handleAdd}
@@ -189,35 +193,57 @@ const Users = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">Username</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">Name</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">Email</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">Role</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Actions</th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  Username
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  Name
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  Email
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  Role
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase">
+                  Status
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400">
+                  <td
+                    colSpan="6"
+                    className="px-5 py-12 text-center text-slate-400"
+                  >
                     Loading users...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400">
+                  <td
+                    colSpan="6"
+                    className="px-5 py-12 text-center text-slate-400"
+                  >
                     No users found
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition">
-                    <td className="px-5 py-4 font-medium text-slate-800">{user.username}</td>
+                    <td className="px-5 py-4 font-medium text-slate-800">
+                      {user.username}
+                    </td>
                     <td className="px-5 py-4 text-slate-600">
                       {user.first_name} {user.last_name}
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{user.email || "-"}</td>
+                    <td className="px-5 py-4 text-slate-600">
+                      {user.email || "-"}
+                    </td>
                     <td className="px-5 py-4">
                       {getRoleBadge(user.profile?.role || user.role)}
                     </td>

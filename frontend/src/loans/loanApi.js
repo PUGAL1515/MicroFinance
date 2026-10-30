@@ -1,4 +1,3 @@
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 async function request(path, options = {}) {
@@ -37,12 +36,11 @@ async function request(path, options = {}) {
         ? data
         : data?.detail ||
           Object.entries(data || {})
-            .map(([key, value]) =>
-              `${key}: ${
-                typeof value === "object"
-                  ? JSON.stringify(value)
-                  : value
-              }`
+            .map(
+              ([key, value]) =>
+                `${key}: ${
+                  typeof value === "object" ? JSON.stringify(value) : value
+                }`,
             )
             .join("\n");
 
@@ -60,15 +58,13 @@ const json = (method, body) => ({
 export const loanApi = {
   // Plans
   getPlans: () => request("/api/group-loan/plans/"),
-  createPlan: (data) =>
-    request("/api/group-loan/plans/", json("POST", data)),
+  createPlan: (data) => request("/api/group-loan/plans/", json("POST", data)),
   updatePlan: (id, data) =>
     request(`/api/group-loan/plans/${id}/`, json("PATCH", data)),
 
   // Groups
   getGroups: () => request("/api/group-loan/groups/"),
-  createGroup: (data) =>
-    request("/api/group-loan/groups/", json("POST", data)),
+  createGroup: (data) => request("/api/group-loan/groups/", json("POST", data)),
   updateGroup: (id, data) =>
     request(`/api/group-loan/groups/${id}/`, json("PATCH", data)),
 
@@ -81,7 +77,7 @@ export const loanApi = {
       json("POST", {
         customer: Number(customerId),
         is_leader: isLeader,
-      })
+      }),
     ),
   getCustomers: (query = "") =>
     request(`/api/customer/?q=${encodeURIComponent(query)}`),
@@ -89,21 +85,16 @@ export const loanApi = {
   // Loan applications
   getApplications: (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    return request(
-      `/api/group-loan/applications/${query ? `?${query}` : ""}`
-    );
+    return request(`/api/group-loan/applications/${query ? `?${query}` : ""}`);
   },
   createApplication: (data) =>
-    request(
-      "/api/group-loan/applications/",
-      json("POST", data)
-    ),
+    request("/api/group-loan/applications/", json("POST", data)),
 
   // Approval / rejection
   decideApplication: (id, data) =>
     request(
       `/api/group-loan/applications/${id}/decision/`,
-      json("PATCH", data)
+      json("PATCH", data),
     ),
 
   // Calculation and EMI schedule
@@ -112,15 +103,12 @@ export const loanApi = {
       `/api/group-loan/applications/${id}/generate-schedule/`,
       json("POST", {
         ...(firstDueDate ? { first_due_date: firstDueDate } : {}),
-      })
+      }),
     ),
 
   // Disbursement
   disburseLoan: (id) =>
-    request(
-      `/api/group-loan/applications/${id}/disburse/`,
-      json("POST", {})
-    ),
+    request(`/api/group-loan/applications/${id}/disburse/`, json("POST", {})),
   //   disburseLoan: (applicationId) =>
   // api.post(
   //   `/api/group-loan/applications/${applicationId}/disburse/`,
@@ -131,7 +119,6 @@ export const loanApi = {
   recordPayment: (installmentId, data) =>
     request(
       `/api/group-loan/installments/${installmentId}/payments/`,
-      json("POST", data)
+      json("POST", data),
     ),
 };
-

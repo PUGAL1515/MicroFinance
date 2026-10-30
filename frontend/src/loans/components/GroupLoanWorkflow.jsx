@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -30,7 +29,9 @@ const inputClass =
 
 const initialDisbursement = (application) => ({
   disbursement_date: today(),
-  amount: String(application.approved_total || application.requested_total || ""),
+  amount: String(
+    application.approved_total || application.requested_total || "",
+  ),
   disbursement_mode: "bank_transfer",
   transaction_reference: "",
   disbursed_to: application.group_name || "",
@@ -102,7 +103,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
       setError(
         err.response?.data?.detail ||
           err.message ||
-          "Unable to load loan applications."
+          "Unable to load loan applications.",
       );
     } finally {
       setLoading(false);
@@ -157,7 +158,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
           requested_per_member: requestedPerMember,
           application_notes: applicationNotes,
         }),
-      "Loan application submitted successfully."
+      "Loan application submitted successfully.",
     );
 
     if (success) {
@@ -187,7 +188,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
       setError(
         err.response?.data?.detail ||
           err.message ||
-          "Unable to load EMI schedule."
+          "Unable to load EMI schedule.",
       );
     } finally {
       setBusy("");
@@ -202,7 +203,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
       async () => {
         const data = await loanApi.generateSchedule(
           id,
-          firstDueDates[id] || undefined
+          firstDueDates[id] || undefined,
         );
 
         setSchedules((old) => ({
@@ -218,12 +219,12 @@ export default function GroupLoanWorkflow({ groups = [] }) {
         if (data.total_payable != null) {
           setMessage(
             `EMI schedule generated. Total interest: ${money(
-              data.total_interest
-            )}; Total payable: ${money(data.total_payable)}.`
+              data.total_interest,
+            )}; Total payable: ${money(data.total_payable)}.`,
           );
         }
       },
-      "EMI schedule generated successfully."
+      "EMI schedule generated successfully.",
     );
 
     return success;
@@ -261,7 +262,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
         }),
       status === "approved"
         ? "Loan application approved."
-        : "Loan application rejected."
+        : "Loan application rejected.",
     );
   };
 
@@ -326,7 +327,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
     }
 
     const confirmed = window.confirm(
-      `Confirm disbursement of ${money(form.amount)} for Application #${id}?`
+      `Confirm disbursement of ${money(form.amount)} for Application #${id}?`,
     );
 
     if (!confirmed) return;
@@ -343,7 +344,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
     const success = await runAction(
       `disburse-${id}`,
       () => loanApi.disburseLoan(id, payload),
-      "Loan disbursement completed successfully."
+      "Loan disbursement completed successfully.",
     );
 
     if (success) {
@@ -390,13 +391,11 @@ export default function GroupLoanWorkflow({ groups = [] }) {
           [installmentId]: "",
         }));
       },
-      "Collection saved and EMI schedule refreshed."
+      "Collection saved and EMI schedule refreshed.",
     );
   };
 
-  const activeGroups = groups.filter(
-    (group) => group.status !== "closed"
-  );
+  const activeGroups = groups.filter((group) => group.status !== "closed");
 
   return (
     <div className="space-y-6">
@@ -467,9 +466,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
               step="0.01"
               required
               value={requestedPerMember}
-              onChange={(event) =>
-                setRequestedPerMember(event.target.value)
-              }
+              onChange={(event) => setRequestedPerMember(event.target.value)}
               placeholder="e.g. 20000"
               className={inputClass}
             />
@@ -480,9 +477,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
               <textarea
                 rows={2}
                 value={applicationNotes}
-                onChange={(event) =>
-                  setApplicationNotes(event.target.value)
-                }
+                onChange={(event) => setApplicationNotes(event.target.value)}
                 placeholder="Purpose of loan"
                 className={inputClass}
               />
@@ -529,9 +524,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
           </div>
         ) : applications.length === 0 ? (
           <div className="p-10 text-center">
-            <h3 className="font-bold text-slate-800">
-              No applications yet
-            </h3>
+            <h3 className="font-bold text-slate-800">No applications yet</h3>
             <p className="mt-1 text-sm text-slate-500">
               Submit a group loan application to begin processing.
             </p>
@@ -542,8 +535,8 @@ export default function GroupLoanWorkflow({ groups = [] }) {
               const id = application.id;
               const schedule = schedules[id] || [];
               const hasSchedule =
-  application.has_schedule === true ||
-  Number(application.installment_count || 0) > 0;
+                application.has_schedule === true ||
+                Number(application.installment_count || 0) > 0;
               const isExpanded = Boolean(expanded[id]);
               const isDisbursementOpen = showDisbursementForm === id;
               const disbursement = disbursementForms[id] || {};
@@ -578,32 +571,23 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                           "Interest Rate",
                           `${application.interest_rate ?? "—"}%`,
                         ],
-                        [
-                          "Interest Method",
-                          application.interest_method || "—",
-                        ],
+                        ["Interest Method", application.interest_method || "—"],
                         [
                           "Tenure",
                           `${application.tenure_months ?? "—"} months`,
                         ],
-                        [
-                          "Frequency",
-                          application.repayment_frequency || "—",
-                        ],
+                        ["Frequency", application.repayment_frequency || "—"],
                         ["Members", application.member_count ?? "—"],
                         [
                           "Submitted",
                           application.submitted_at
                             ? new Date(
-                                application.submitted_at
+                                application.submitted_at,
                               ).toLocaleDateString("en-IN")
                             : "—",
                         ],
                       ].map(([label, value]) => (
-                        <div
-                          key={label}
-                          className="rounded-xl bg-slate-50 p-3"
-                        >
+                        <div key={label} className="rounded-xl bg-slate-50 p-3">
                           <p className="text-xs font-medium text-slate-500">
                             {label}
                           </p>
@@ -701,9 +685,9 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                       </h4>
 
                       <p className="mt-1 text-sm text-slate-600">
-                        The backend calculates the schedule using the
-                        approved principal, interest method, tenure and
-                        repayment frequency.
+                        The backend calculates the schedule using the approved
+                        principal, interest method, tenure and repayment
+                        frequency.
                       </p>
 
                       <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -759,8 +743,8 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                             Loan Disbursement
                           </h4>
                           <p className="mt-1 text-sm text-slate-600">
-                            EMI schedule generated. Enter disbursement
-                            details to continue.
+                            EMI schedule generated. Enter disbursement details
+                            to continue.
                           </p>
                         </div>
 
@@ -796,7 +780,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                   updateDisbursementField(
                                     id,
                                     "disbursement_date",
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                                 className={inputClass}
@@ -813,7 +797,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                   updateDisbursementField(
                                     id,
                                     "amount",
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                                 className={inputClass}
@@ -822,7 +806,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                 Approved amount:{" "}
                                 {money(
                                   application.approved_total ||
-                                    application.requested_total
+                                    application.requested_total,
                                 )}
                               </span>
                             </Field>
@@ -837,7 +821,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                   updateDisbursementField(
                                     id,
                                     "disbursement_mode",
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                                 className={inputClass}
@@ -854,14 +838,12 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                             <Field label="Transaction Reference / UTR Number">
                               <input
                                 type="text"
-                                value={
-                                  disbursement.transaction_reference || ""
-                                }
+                                value={disbursement.transaction_reference || ""}
                                 onChange={(event) =>
                                   updateDisbursementField(
                                     id,
                                     "transaction_reference",
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                                 placeholder="Enter UTR / transaction ID"
@@ -877,7 +859,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                   updateDisbursementField(
                                     id,
                                     "disbursed_to",
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                                 placeholder="Recipient / Group Leader name"
@@ -894,7 +876,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                     updateDisbursementField(
                                       id,
                                       "remarks",
-                                      event.target.value
+                                      event.target.value,
                                     )
                                   }
                                   placeholder="Enter disbursement remarks"
@@ -907,9 +889,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                           <div className="mt-5 flex flex-wrap justify-end gap-3">
                             <button
                               type="button"
-                              onClick={() =>
-                                setShowDisbursementForm(null)
-                              }
+                              onClick={() => setShowDisbursementForm(null)}
                               disabled={Boolean(busy)}
                               className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
                             >
@@ -940,8 +920,8 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                           Loan Disbursed
                         </h4>
                         <p className="mt-1 text-sm text-slate-600">
-                          Loan has been marked as disbursed. View the
-                          saved schedule and record collections.
+                          Loan has been marked as disbursed. View the saved
+                          schedule and record collections.
                         </p>
                       </div>
 
@@ -992,13 +972,11 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                             const balance = Math.max(
                               0,
                               Number(item.total_due || 0) -
-                                Number(item.paid_amount || 0)
+                                Number(item.paid_amount || 0),
                             );
 
                             return (
-                              <tr
-                                key={item.id || item.installment_number}
-                              >
+                              <tr key={item.id || item.installment_number}>
                                 <td className="p-3">
                                   {item.installment_number}
                                 </td>
@@ -1029,15 +1007,14 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                     }`}
                                   >
                                     {String(
-                                      item.status || "pending"
+                                      item.status || "pending",
                                     ).toUpperCase()}
                                   </span>
                                 </td>
 
                                 {application.status === "disbursed" && (
                                   <td className="min-w-64 p-3">
-                                    {balance <= 0 ||
-                                    item.status === "paid" ? (
+                                    {balance <= 0 || item.status === "paid" ? (
                                       <span className="text-xs font-bold text-emerald-700">
                                         Fully paid
                                       </span>
@@ -1048,9 +1025,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                           min="0.01"
                                           max={balance}
                                           step="0.01"
-                                          value={
-                                            paymentAmounts[item.id] || ""
-                                          }
+                                          value={paymentAmounts[item.id] || ""}
                                           onChange={(event) =>
                                             setPaymentAmounts((old) => ({
                                               ...old,
@@ -1058,7 +1033,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
                                             }))
                                           }
                                           placeholder={`Balance ${money(
-                                            balance
+                                            balance,
                                           )}`}
                                           className={inputClass}
                                         />
@@ -1079,9 +1054,7 @@ export default function GroupLoanWorkflow({ groups = [] }) {
 
                                         <button
                                           type="button"
-                                          disabled={
-                                            Boolean(busy) || !item.id
-                                          }
+                                          disabled={Boolean(busy) || !item.id}
                                           onClick={() =>
                                             recordPayment(application, item)
                                           }
@@ -1105,8 +1078,8 @@ export default function GroupLoanWorkflow({ groups = [] }) {
 
                   {isExpanded && schedule.length === 0 && (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                      No installments were returned. Refresh the schedule
-                      or check the backend schedule endpoint.
+                      No installments were returned. Refresh the schedule or
+                      check the backend schedule endpoint.
                     </div>
                   )}
                 </article>

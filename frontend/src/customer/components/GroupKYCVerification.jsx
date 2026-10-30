@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { loanApi } from "../../loans/loanApi";
 
@@ -11,18 +10,15 @@ async function getKyc(customerId) {
     localStorage.getItem("token") ||
     localStorage.getItem("authToken");
 
-  const response = await fetch(
-    `${API_URL}/api/customer/${customerId}/kyc/`,
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }
-  );
+  const response = await fetch(`${API_URL}/api/customer/${customerId}/kyc/`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
 
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
     throw new Error(
-      data?.detail || `Unable to load customer ${customerId} KYC.`
+      data?.detail || `Unable to load customer ${customerId} KYC.`,
     );
   }
 
@@ -89,9 +85,7 @@ export default function GroupKYCVerification({ groups = [] }) {
         activeMembers.map(async (member) => {
           const customerId = getCustomerId(member);
           const customer =
-            typeof member.customer === "object"
-              ? member.customer
-              : member;
+            typeof member.customer === "object" ? member.customer : member;
 
           if (!customerId) {
             return {
@@ -113,13 +107,11 @@ export default function GroupKYCVerification({ groups = [] }) {
               customerId,
               identityVerified: docs.some(
                 (doc) =>
-                  doc.document_type === "identity" &&
-                  doc.status === "verified"
+                  doc.document_type === "identity" && doc.status === "verified",
               ),
               addressVerified: docs.some(
                 (doc) =>
-                  doc.document_type === "address" &&
-                  doc.status === "verified"
+                  doc.document_type === "address" && doc.status === "verified",
               ),
               error: "",
             };
@@ -133,7 +125,7 @@ export default function GroupKYCVerification({ groups = [] }) {
               error: err.message,
             };
           }
-        })
+        }),
       );
 
       setMembers(rows);
@@ -150,7 +142,7 @@ export default function GroupKYCVerification({ groups = [] }) {
   }, [loadMembersAndKyc, refreshKey]);
 
   const completedCount = members.filter(
-    (member) => member.identityVerified && member.addressVerified
+    (member) => member.identityVerified && member.addressVerified,
   ).length;
 
   const allVerified = members.length > 0 && completedCount === members.length;
@@ -302,9 +294,7 @@ export default function GroupKYCVerification({ groups = [] }) {
                         <td className="p-4">
                           <span
                             className={`text-xs font-bold ${
-                              complete
-                                ? "text-emerald-700"
-                                : "text-amber-700"
+                              complete ? "text-emerald-700" : "text-amber-700"
                             }`}
                           >
                             {complete ? "COMPLETE" : "ACTION REQUIRED"}

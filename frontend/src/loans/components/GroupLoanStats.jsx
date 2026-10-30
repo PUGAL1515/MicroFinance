@@ -1,4 +1,3 @@
-
 const formatINR = (value) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -9,12 +8,12 @@ const formatINR = (value) =>
 export default function GroupLoanStats({ plans, groups, loading }) {
   const totalMembers = groups.reduce(
     (sum, group) => sum + Number(group.member_count || 0),
-    0
+    0,
   );
 
   const activePlans = plans.filter((plan) => plan.is_active).length;
   const activeGroups = groups.filter(
-    (group) => group.status === "active"
+    (group) => group.status === "active",
   ).length;
 
   const stats = [
@@ -59,9 +58,7 @@ export default function GroupLoanStats({ plans, groups, loading }) {
           className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         >
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500">
-              {stat.label}
-            </p>
+            <p className="text-sm font-medium text-slate-500">{stat.label}</p>
             <span
               className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${colors[stat.color]}`}
             >
@@ -71,9 +68,7 @@ export default function GroupLoanStats({ plans, groups, loading }) {
           <p className="mt-4 text-3xl font-bold text-slate-900">
             {loading ? "—" : stat.value.toLocaleString("en-IN")}
           </p>
-          <p className="mt-2 text-xs text-slate-400">
-            Group Loan Overview
-          </p>
+          <p className="mt-2 text-xs text-slate-400">Group Loan Overview</p>
         </div>
       ))}
     </div>

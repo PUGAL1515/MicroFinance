@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -17,8 +16,7 @@ export default function GroupCreateForm({ plans, onSaved, onCancel }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const change = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const save = async (e) => {
     e.preventDefault();
@@ -54,9 +52,7 @@ export default function GroupCreateForm({ plans, onSaved, onCancel }) {
       onSubmit={save}
       className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <h2 className="text-xl font-bold text-slate-900">
-        Create New Group
-      </h2>
+      <h2 className="text-xl font-bold text-slate-900">Create New Group</h2>
       <p className="mb-6 mt-1 text-sm text-slate-500">
         Create a group using an active loan plan.
       </p>
@@ -150,7 +146,14 @@ export default function GroupCreateForm({ plans, onSaved, onCancel }) {
             onChange={change}
           >
             <option value="">Select day</option>
-            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
+            {[
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+            ].map((day) => (
               <option key={day} value={day}>
                 {day}
               </option>

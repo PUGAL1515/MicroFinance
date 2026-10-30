@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -20,11 +19,7 @@ const initialForm = {
 const fieldClass =
   "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
 
-export default function GroupLoanPlanForm({
-  editingPlan,
-  onSaved,
-  onCancel,
-}) {
+export default function GroupLoanPlanForm({ editingPlan, onSaved, onCancel }) {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -55,10 +50,7 @@ export default function GroupLoanPlanForm({
       return;
     }
 
-    if (
-      Number(form.min_loan_per_member) >
-      Number(form.max_loan_per_member)
-    ) {
+    if (Number(form.min_loan_per_member) > Number(form.max_loan_per_member)) {
       setError("Minimum loan cannot exceed maximum loan.");
       return;
     }
@@ -144,11 +136,24 @@ export default function GroupLoanPlanForm({
         {input("min_members", "Minimum Members", "number", { min: 1 })}
         {input("max_members", "Maximum Members", "number", { min: 1 })}
 
-        {input("min_loan_per_member", "Minimum Loan / Member (₹)", "number", { min: 0.01, step: 0.01 })}
-        {input("max_loan_per_member", "Maximum Loan / Member (₹)", "number", { min: 0.01, step: 0.01 })}
+        {input("min_loan_per_member", "Minimum Loan / Member (₹)", "number", {
+          min: 0.01,
+          step: 0.01,
+        })}
+        {input("max_loan_per_member", "Maximum Loan / Member (₹)", "number", {
+          min: 0.01,
+          step: 0.01,
+        })}
 
-        {input("max_group_loan_amount", "Maximum Group Loan (₹)", "number", { min: 0.01, step: 0.01 })}
-        {input("annual_interest_rate", "Annual Interest (%)", "number", { min: 0, max: 100, step: 0.01 })}
+        {input("max_group_loan_amount", "Maximum Group Loan (₹)", "number", {
+          min: 0.01,
+          step: 0.01,
+        })}
+        {input("annual_interest_rate", "Annual Interest (%)", "number", {
+          min: 0,
+          max: 100,
+          step: 0.01,
+        })}
 
         <label className="text-sm font-medium text-slate-700">
           Interest Method
@@ -209,9 +214,8 @@ export default function GroupLoanPlanForm({
 
       {editingPlan?.is_active && (
         <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
-          Active plans cannot be edited using the current backend API.
-          Create a new plan version in the backend before updating an
-          active plan.
+          Active plans cannot be edited using the current backend API. Create a
+          new plan version in the backend before updating an active plan.
         </p>
       )}
 
