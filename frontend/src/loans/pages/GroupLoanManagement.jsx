@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -86,7 +85,7 @@ export default function GroupLoanManagement() {
       setGroups(normalizeList(groupData));
     } catch (err) {
       setError(
-        err.message || "Unable to load group loan data. Please try again."
+        err.message || "Unable to load group loan data. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -152,9 +151,7 @@ export default function GroupLoanManagement() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl text-slate-500">
             ♧
           </div>
-          <h3 className="mt-4 font-semibold text-slate-800">
-            No groups found
-          </h3>
+          <h3 className="mt-4 font-semibold text-slate-800">No groups found</h3>
           <p className="mt-1 text-sm text-slate-500">
             Create your first borrower group to get started.
           </p>
@@ -186,10 +183,7 @@ export default function GroupLoanManagement() {
                 const isActive = status === "active";
 
                 return (
-                  <tr
-                    key={group.id}
-                    className="transition hover:bg-blue-50/40"
-                  >
+                  <tr key={group.id} className="transition hover:bg-blue-50/40">
                     <td className="px-5 py-4 font-semibold text-slate-900">
                       {group.name || "Unnamed Group"}
                     </td>
@@ -201,9 +195,7 @@ export default function GroupLoanManagement() {
                     </td>
                     <td className="px-5 py-4">
                       <span className="rounded-lg bg-blue-50 px-3 py-1 font-semibold text-blue-700">
-                        {group.active_member_count ??
-                          group.member_count ??
-                          0}
+                        {group.active_member_count ?? group.member_count ?? 0}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -236,9 +228,7 @@ export default function GroupLoanManagement() {
 
       <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
         Total registered groups:{" "}
-        <span className="font-semibold text-slate-700">
-          {groups.length}
-        </span>
+        <span className="font-semibold text-slate-700">{groups.length}</span>
       </div>
     </section>
   );
@@ -360,19 +350,21 @@ export default function GroupLoanManagement() {
   };
 
   const page = pageTitles[active] || pageTitles.dashboard;
-  const heading = showPlanForm && active === "plans"
-    ? editingPlan
-      ? "Edit Loan Plan"
-      : "Create Loan Plan"
-    : showGroupForm && active === "groups"
-      ? "Create Group"
-      : page.title;
+  const heading =
+    showPlanForm && active === "plans"
+      ? editingPlan
+        ? "Edit Loan Plan"
+        : "Create Loan Plan"
+      : showGroupForm && active === "groups"
+        ? "Create Group"
+        : page.title;
 
-  const description = showPlanForm && active === "plans"
-    ? "Configure loan terms and update the plan details."
-    : showGroupForm && active === "groups"
-      ? "Register a borrower group and associate it with a loan plan."
-      : page.description;
+  const description =
+    showPlanForm && active === "plans"
+      ? "Configure loan terms and update the plan details."
+      : showGroupForm && active === "groups"
+        ? "Register a borrower group and associate it with a loan plan."
+        : page.description;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -398,9 +390,7 @@ export default function GroupLoanManagement() {
                 <p className="text-sm font-semibold text-slate-800">
                   Group Lending
                 </p>
-                <p className="text-xs text-slate-500">
-                  Loan administration
-                </p>
+                <p className="text-xs text-slate-500">Loan administration</p>
               </div>
               <button
                 type="button"
@@ -468,7 +458,9 @@ export default function GroupLoanManagement() {
         {renderContent()}
 
         <footer className="mt-10 flex flex-col gap-2 border-t border-slate-200 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} SMLNEXGEN. Microfinance Management.</p>
+          <p>
+            © {new Date().getFullYear()} SMLNEXGEN. Microfinance Management.
+          </p>
           <p>Group Loan Administration</p>
         </footer>
       </main>

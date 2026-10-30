@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -27,7 +26,7 @@ async function apiRequest(path) {
     throw new Error(
       data?.detail ||
         (typeof data === "string" ? data : JSON.stringify(data)) ||
-        `Request failed (${response.status})`
+        `Request failed (${response.status})`,
     );
   }
 
@@ -52,9 +51,7 @@ const money = (value) =>
 
 const todayString = () => {
   const date = new Date();
-  return new Date(
-    date.getTime() - date.getTimezoneOffset() * 60000
-  )
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 10);
 };
@@ -90,7 +87,9 @@ function groupName(application) {
     );
   }
 
-  return application.group_name || `Group #${group || application.group_id || ""}`;
+  return (
+    application.group_name || `Group #${group || application.group_id || ""}`
+  );
 }
 
 function Badge({ status }) {
@@ -113,7 +112,9 @@ function Badge({ status }) {
         "bg-slate-100 text-slate-600"
       }`}
     >
-      {String(status || "pending").replaceAll("_", " ").toUpperCase()}
+      {String(status || "pending")
+        .replaceAll("_", " ")
+        .toUpperCase()}
     </span>
   );
 }
@@ -138,9 +139,7 @@ function EmptyState({ title, message }) {
         📋
       </div>
       <h3 className="mt-4 font-bold text-slate-800">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-        {message}
-      </p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{message}</p>
     </div>
   );
 }
@@ -182,7 +181,7 @@ export default function ApprovedLoansDashboard() {
     } else {
       setIndividualLoans([]);
       nextErrors.push(
-        `Individual loans: ${requests[0].reason?.message || "Unable to load"}`
+        `Individual loans: ${requests[0].reason?.message || "Unable to load"}`,
       );
     }
 
@@ -191,7 +190,7 @@ export default function ApprovedLoansDashboard() {
     } else {
       setIndividualEmis([]);
       nextErrors.push(
-        `Individual EMI schedules: ${requests[1].reason?.message || "Unable to load"}`
+        `Individual EMI schedules: ${requests[1].reason?.message || "Unable to load"}`,
       );
     }
 
@@ -200,7 +199,7 @@ export default function ApprovedLoansDashboard() {
     } else {
       setGroupLoans([]);
       nextErrors.push(
-        `Group loans: ${requests[2].reason?.message || "Unable to load"}`
+        `Group loans: ${requests[2].reason?.message || "Unable to load"}`,
       );
     }
 
@@ -216,25 +215,25 @@ export default function ApprovedLoansDashboard() {
     () =>
       individualLoans.filter((loan) =>
         ["approved", "disbursed"].includes(
-          String(loan.status || "").toLowerCase()
-        )
+          String(loan.status || "").toLowerCase(),
+        ),
       ),
-    [individualLoans]
+    [individualLoans],
   );
 
   const groupActive = useMemo(
     () =>
       groupLoans.filter((loan) =>
         ["approved", "disbursed"].includes(
-          String(loan.status || "").toLowerCase()
-        )
+          String(loan.status || "").toLowerCase(),
+        ),
       ),
-    [groupLoans]
+    [groupLoans],
   );
 
   const normalizedEmis = useMemo(() => {
     const loanMap = new Map(
-      individualLoans.map((loan) => [Number(loan.id), loan])
+      individualLoans.map((loan) => [Number(loan.id), loan]),
     );
 
     return individualEmis.map((emi) => {
@@ -283,9 +282,7 @@ export default function ApprovedLoansDashboard() {
       ...loan,
       recordType: "group",
       displayName: groupName(loan),
-      displayAmount: Number(
-        loan.approved_total ?? loan.requested_total ?? 0
-      ),
+      displayAmount: Number(loan.approved_total ?? loan.requested_total ?? 0),
       displayInterest: loan.interest_rate,
       displayTenure: loan.tenure_months,
     }));
@@ -297,8 +294,7 @@ export default function ApprovedLoansDashboard() {
     const query = search.trim().toLowerCase();
 
     return allLoans.filter((loan) => {
-      const matchesType =
-        loanType === "all" || loan.recordType === loanType;
+      const matchesType = loanType === "all" || loan.recordType === loanType;
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -315,54 +311,45 @@ export default function ApprovedLoansDashboard() {
         .toLowerCase();
 
       return (
-        matchesType &&
-        matchesStatus &&
-        (!query || searchable.includes(query))
+        matchesType && matchesStatus && (!query || searchable.includes(query))
       );
     });
   }, [allLoans, loanType, search, statusFilter]);
 
   const groupInstallments = useMemo(
     () => Object.values(groupSchedules).flat(),
-    [groupSchedules]
+    [groupSchedules],
   );
 
   const groupDueToday = groupInstallments.filter(
-    (emi) => emi.due_date === today && Number(emi.balance_due ?? 0) > 0
+    (emi) => emi.due_date === today && Number(emi.balance_due ?? 0) > 0,
   );
 
   const groupOverdue = groupInstallments.filter(
-    (emi) =>
-      emi.due_date < today && Number(emi.balance_due ?? 0) > 0
+    (emi) => emi.due_date < today && Number(emi.balance_due ?? 0) > 0,
   );
 
   const individualDueToday = normalizedEmis.filter(
     (emi) =>
       emi.due_date === today &&
       emi.balance > 0 &&
-      emi.loan?.status === "disbursed"
+      emi.loan?.status === "disbursed",
   );
 
   const individualOverdue = normalizedEmis.filter(
     (emi) =>
       emi.due_date < today &&
       emi.balance > 0 &&
-      emi.loan?.status === "disbursed"
+      emi.loan?.status === "disbursed",
   );
 
   const dueTodayAmount =
     individualDueToday.reduce((sum, emi) => sum + emi.balance, 0) +
-    groupDueToday.reduce(
-      (sum, emi) => sum + Number(emi.balance_due || 0),
-      0
-    );
+    groupDueToday.reduce((sum, emi) => sum + Number(emi.balance_due || 0), 0);
 
   const overdueAmount =
     individualOverdue.reduce((sum, emi) => sum + emi.balance, 0) +
-    groupOverdue.reduce(
-      (sum, emi) => sum + Number(emi.balance_due || 0),
-      0
-    );
+    groupOverdue.reduce((sum, emi) => sum + Number(emi.balance_due || 0), 0);
 
   const paidInstallments =
     normalizedEmis.filter((emi) => emi.displayStatus === "paid").length +
@@ -384,7 +371,7 @@ export default function ApprovedLoansDashboard() {
 
     try {
       const data = await apiRequest(
-        `/api/group-loan/applications/${id}/installments/`
+        `/api/group-loan/applications/${id}/installments/`,
       );
 
       setGroupSchedules((prev) => ({
@@ -403,9 +390,7 @@ export default function ApprovedLoansDashboard() {
 
   const selectedIndividualEmis =
     selectedLoan?.recordType === "individual"
-      ? normalizedEmis.filter(
-          (emi) => emi.loanId === Number(selectedLoan.id)
-        )
+      ? normalizedEmis.filter((emi) => emi.loanId === Number(selectedLoan.id))
       : [];
 
   const selectedGroupEmis =
@@ -437,7 +422,8 @@ export default function ApprovedLoansDashboard() {
             Approved Loans
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Individual and group loan approvals, EMI schedules and outstanding balances.
+            Individual and group loan approvals, EMI schedules and outstanding
+            balances.
           </p>
         </div>
 
@@ -559,9 +545,7 @@ export default function ApprovedLoansDashboard() {
                 </p>
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-500">
-                  Tenure
-                </p>
+                <p className="text-xs font-semibold text-slate-500">Tenure</p>
                 <p className="mt-1 text-lg font-extrabold text-slate-900">
                   {selectedLoan.displayTenure ?? "—"}{" "}
                   {selectedLoan.recordType === "group"
@@ -606,16 +590,15 @@ export default function ApprovedLoansDashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {visibleEmis.map((emi) => {
                     const groupLoan = selectedLoan.recordType === "group";
-                    const due = Number(
-                      groupLoan ? emi.total_due : emi.amount_due
-                    ) || 0;
-                    const paid = Number(
-                      groupLoan ? emi.paid_amount : emi.amount_paid
-                    ) || 0;
+                    const due =
+                      Number(groupLoan ? emi.total_due : emi.amount_due) || 0;
+                    const paid =
+                      Number(groupLoan ? emi.paid_amount : emi.amount_paid) ||
+                      0;
                     const balance = Math.max(0, due - paid);
 
                     let displayStatus = String(
-                      emi.status || "pending"
+                      emi.status || "pending",
                     ).toLowerCase();
 
                     if (balance <= 0 && due > 0) {
@@ -636,20 +619,16 @@ export default function ApprovedLoansDashboard() {
                           {money(
                             groupLoan
                               ? emi.principal_due
-                              : emi.principal_amount
+                              : emi.principal_amount,
                           )}
                         </td>
                         <td className="p-4">
                           {money(
-                            groupLoan
-                              ? emi.interest_due
-                              : emi.interest_amount
+                            groupLoan ? emi.interest_due : emi.interest_amount,
                           )}
                         </td>
                         <td className="p-4 font-bold">{money(due)}</td>
-                        <td className="p-4 text-emerald-700">
-                          {money(paid)}
-                        </td>
+                        <td className="p-4 text-emerald-700">{money(paid)}</td>
                         <td className="p-4 font-bold text-red-700">
                           {money(balance)}
                         </td>
@@ -701,7 +680,8 @@ export default function ApprovedLoansDashboard() {
                   {tab === "today" ? "Today's EMI Due" : "Overdue EMI List"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Only installments from the schedules currently loaded are counted.
+                  Only installments from the schedules currently loaded are
+                  counted.
                 </p>
               </div>
 
@@ -755,7 +735,8 @@ export default function ApprovedLoansDashboard() {
                         ))}
                         {groupRows.map((emi) => {
                           const application = groupActive.find(
-                            (loan) => Number(loan.id) === Number(emi.application)
+                            (loan) =>
+                              Number(loan.id) === Number(emi.application),
                           );
                           const due = Number(emi.total_due || 0);
                           const paid = Number(emi.paid_amount || 0);
@@ -765,7 +746,9 @@ export default function ApprovedLoansDashboard() {
                             <tr key={`group-${emi.id}`}>
                               <td className="p-4">Group</td>
                               <td className="p-4 font-semibold">
-                                {application ? groupName(application) : "Group loan"}
+                                {application
+                                  ? groupName(application)
+                                  : "Group loan"}
                               </td>
                               <td className="p-4">{emi.installment_number}</td>
                               <td className="p-4">{emi.due_date}</td>
@@ -780,10 +763,10 @@ export default function ApprovedLoansDashboard() {
                                     balance <= 0
                                       ? "paid"
                                       : paid > 0
-                                      ? "partial"
-                                      : emi.due_date < today
-                                      ? "overdue"
-                                      : "pending"
+                                        ? "partial"
+                                        : emi.due_date < today
+                                          ? "overdue"
+                                          : "pending"
                                   }
                                 />
                               </td>
@@ -900,12 +883,16 @@ export default function ApprovedLoansDashboard() {
                           </td>
                           <td className="p-4">
                             {loan.displayTenure ?? "—"}{" "}
-                            {loan.recordType === "group" ? "months" : "installments"}
+                            {loan.recordType === "group"
+                              ? "months"
+                              : "installments"}
                           </td>
                           <td className="p-4 capitalize">
-                            {(loan.repayment_frequency ||
+                            {(
+                              loan.repayment_frequency ||
                               loan.application?.repayment_frequency ||
-                              "—").replaceAll("_", " ")}
+                              "—"
+                            ).replaceAll("_", " ")}
                           </td>
                           <td className="p-4">
                             <Badge status={loan.status} />
@@ -933,7 +920,8 @@ export default function ApprovedLoansDashboard() {
         SMLNEXGEN · Data is loaded from the configured backend APIs. Group EMI
         totals on this dashboard include only group schedules opened and loaded
         during this session. For accurate collection balances, the backend must
-        update each installment's paid amount and status after recording payment.
+        update each installment's paid amount and status after recording
+        payment.
       </p>
     </div>
   );

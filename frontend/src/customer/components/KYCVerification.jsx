@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState, useRef } from "react";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -35,8 +34,7 @@ async function apiRequest(path, options = {}) {
 
   if (!response.ok) {
     const message =
-      data?.detail ||
-      (typeof data === "string" ? data : JSON.stringify(data));
+      data?.detail || (typeof data === "string" ? data : JSON.stringify(data));
     throw new Error(message || `Request failed: ${response.status}`);
   }
 
@@ -86,7 +84,7 @@ export default function KYCVerification({ initialCustomerId = "" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-const fileInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const loadCustomers = useCallback(async () => {
     try {
       setLoadingCustomers(true);
@@ -113,9 +111,7 @@ const fileInputRef = useRef(null);
     try {
       setLoadingDocuments(true);
       setError("");
-      const data = await apiRequest(
-        `/api/customer/${customerId}/kyc/`
-      );
+      const data = await apiRequest(`/api/customer/${customerId}/kyc/`);
       setDocuments(asList(data));
     } catch (err) {
       setError(err.message || "Unable to load KYC documents.");
@@ -133,59 +129,57 @@ const fileInputRef = useRef(null);
     loadDocuments();
   }, [loadDocuments]);
 
-  
-const uploadDocument = async (event) => {
-  event.preventDefault();
+  const uploadDocument = async (event) => {
+    event.preventDefault();
 
-  if (!customerId) {
-    setError("Please select a customer.");
-    return;
-  }
+    if (!customerId) {
+      setError("Please select a customer.");
+      return;
+    }
 
-  if (!documentReference.trim() && !documentFile) {
-    setError("Enter a document reference or attach a document file.");
-    return;
-  }
+    if (!documentReference.trim() && !documentFile) {
+      setError("Enter a document reference or attach a document file.");
+      return;
+    }
 
-  const formData = new FormData();
+    const formData = new FormData();
 
-  // IMPORTANT: Backend requires customer field
-  formData.append("customer", String(customerId));
-  formData.append("document_type", documentType);
-  formData.append("document_reference", documentReference.trim());
+    // IMPORTANT: Backend requires customer field
+    formData.append("customer", String(customerId));
+    formData.append("document_type", documentType);
+    formData.append("document_reference", documentReference.trim());
 
-  if (documentFile) {
-    formData.append("document_file", documentFile);
-  }
+    if (documentFile) {
+      formData.append("document_file", documentFile);
+    }
 
-  try {
-    setBusy(true);
-    setError("");
-    setMessage("");
+    try {
+      setBusy(true);
+      setError("");
+      setMessage("");
 
-    await apiRequest(`/api/customer/${customerId}/kyc/`, {
-      method: "POST",
-      body: formData,
-    });
+      await apiRequest(`/api/customer/${customerId}/kyc/`, {
+        method: "POST",
+        body: formData,
+      });
 
-    setDocumentReference("");
-    setDocumentFile(null);
+      setDocumentReference("");
+      setDocumentFile(null);
 
-    // Reset only the file input
-    if (fileInputRef.current) {
-  fileInputRef.current.value = "";
-}
+      // Reset only the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 
-    setMessage("KYC document uploaded successfully.");
+      setMessage("KYC document uploaded successfully.");
 
-    await loadDocuments();
-  } catch (err) {
-    setError(err.message || "Unable to upload document.");
-  } finally {
-    setBusy(false);
-  }
-};
-
+      await loadDocuments();
+    } catch (err) {
+      setError(err.message || "Unable to upload document.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const verifyDocument = async (documentId, status) => {
     const notes =
@@ -220,7 +214,7 @@ const uploadDocument = async (event) => {
       setMessage(
         status === "verified"
           ? "Document verified successfully."
-          : "Document rejected."
+          : "Document rejected.",
       );
 
       await loadDocuments();
@@ -324,16 +318,17 @@ const uploadDocument = async (event) => {
           <label className="text-sm font-semibold text-slate-700 md:col-span-2">
             Document File
             <input
-  ref={fileInputRef}
-  type="file"
-  accept=".pdf,.jpg,.jpeg,.png"
-  onChange={(event) =>
-    setDocumentFile(event.target.files?.[0] || null)
-  }
-  className={inputClass}
-/>
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(event) =>
+                setDocumentFile(event.target.files?.[0] || null)
+              }
+              className={inputClass}
+            />
             <span className="mt-1 block text-xs font-normal text-slate-500">
-              PDF, JPG or PNG. File size limits should also be enforced by the backend.
+              PDF, JPG or PNG. File size limits should also be enforced by the
+              backend.
             </span>
           </label>
 

@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -74,7 +73,7 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
       if (!response.ok) {
         throw new Error(
-          result.detail || result.message || "Unable to load group collection."
+          result.detail || result.message || "Unable to load group collection.",
         );
       }
 
@@ -94,8 +93,9 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
   const collections = data?.collections || [];
 
   const installmentNumbers = useMemo(() => {
-    return [...new Set(installments.map((item) => item.installment_number))]
-      .sort((a, b) => a - b);
+    return [
+      ...new Set(installments.map((item) => item.installment_number)),
+    ].sort((a, b) => a - b);
   }, [installments]);
 
   const filteredInstallments = useMemo(() => {
@@ -115,17 +115,17 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
   const totalDue = installments.reduce(
     (sum, item) => sum + Number(item.total_due || 0),
-    0
+    0,
   );
 
   const totalPaid = installments.reduce(
     (sum, item) => sum + Number(item.paid_amount || 0),
-    0
+    0,
   );
 
   const totalBalance = installments.reduce(
     (sum, item) => sum + Number(item.balance_due || 0),
-    0
+    0,
   );
 
   const selectedRows = useMemo(() => {
@@ -139,7 +139,7 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
   const collectionTotal = selectedRows.reduce(
     (sum, item) => sum + Number(item.amount),
-    0
+    0,
   );
 
   const updateAmount = (item, value) => {
@@ -202,8 +202,9 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         const message =
           typeof result === "object"
             ? Object.entries(result)
-                .map(([key, value]) =>
-                  `${key}: ${Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value)}`
+                .map(
+                  ([key, value]) =>
+                    `${key}: ${Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value)}`,
                 )
                 .join("\n")
             : "Collection failed.";
@@ -293,7 +294,11 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         {/* Summary cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard title="Total EMI Due" value={totalDue} color="blue" />
-          <SummaryCard title="Total Collected" value={totalPaid} color="green" />
+          <SummaryCard
+            title="Total Collected"
+            value={totalPaid}
+            color="green"
+          />
           <SummaryCard title="Outstanding" value={totalBalance} color="red" />
           <SummaryCard
             title="Collection Entries"
@@ -368,7 +373,8 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
                           {item.customer_name}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {item.mobile_number || `Customer #${item.customer_id}`}
+                          {item.mobile_number ||
+                            `Customer #${item.customer_id}`}
                         </p>
                       </td>
 

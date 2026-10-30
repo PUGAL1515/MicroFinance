@@ -104,7 +104,9 @@ const GroupLoans = () => {
       Overdue: "bg-red-100 text-red-700",
     };
     return (
-      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-slate-100 text-slate-600"}`}>
+      <span
+        className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-slate-100 text-slate-600"}`}
+      >
         {status}
       </span>
     );
@@ -164,8 +166,8 @@ const GroupLoans = () => {
     if (editingLoan) {
       setLoans(
         loans.map((loan) =>
-          loan.id === editingLoan.id ? { ...loan, ...payload } : loan
-        )
+          loan.id === editingLoan.id ? { ...loan, ...payload } : loan,
+        ),
       );
     } else {
       const newLoan = {
@@ -201,18 +203,47 @@ const GroupLoans = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
         {[
-          { title: "Total Groups", value: totalLoans, icon: "👥", color: "from-blue-500 to-blue-600" },
-          { title: "Active Loans", value: activeLoans, icon: "🟢", color: "from-emerald-500 to-emerald-600" },
-          { title: "Total Disbursed", value: `₹${(totalDisbursed / 100000).toFixed(1)}L`, icon: "💰", color: "from-indigo-500 to-indigo-600" },
-          { title: "Pending Collection", value: `₹${(totalPending / 100000).toFixed(1)}L`, icon: "⏳", color: "from-amber-500 to-amber-600" },
+          {
+            title: "Total Groups",
+            value: totalLoans,
+            icon: "👥",
+            color: "from-blue-500 to-blue-600",
+          },
+          {
+            title: "Active Loans",
+            value: activeLoans,
+            icon: "🟢",
+            color: "from-emerald-500 to-emerald-600",
+          },
+          {
+            title: "Total Disbursed",
+            value: `₹${(totalDisbursed / 100000).toFixed(1)}L`,
+            icon: "💰",
+            color: "from-indigo-500 to-indigo-600",
+          },
+          {
+            title: "Pending Collection",
+            value: `₹${(totalPending / 100000).toFixed(1)}L`,
+            icon: "⏳",
+            color: "from-amber-500 to-amber-600",
+          },
         ].map((stat, index) => (
-          <div key={index} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <div
+            key={index}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500 font-medium">{stat.title}</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{stat.value}</p>
+                <p className="text-sm text-slate-500 font-medium">
+                  {stat.title}
+                </p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">
+                  {stat.value}
+                </p>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-xl shadow-lg`}>
+              <div
+                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-xl shadow-lg`}
+              >
                 {stat.icon}
               </div>
             </div>
@@ -226,20 +257,39 @@ const GroupLoans = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Group Name</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Leader</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Members</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Loan Amount</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Collected</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Group Name
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Leader
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Members
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Loan Amount
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Collected
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Pending
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loans.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-12 text-center text-slate-400">
+                  <td
+                    colSpan="8"
+                    className="px-5 py-12 text-center text-slate-400"
+                  >
                     No group loans found
                   </td>
                 </tr>
@@ -247,14 +297,26 @@ const GroupLoans = () => {
                 loans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-slate-50 transition">
                     <td className="px-5 py-4">
-                      <p className="font-medium text-slate-800">{loan.groupName}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Started: {loan.startDate}</p>
+                      <p className="font-medium text-slate-800">
+                        {loan.groupName}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Started: {loan.startDate}
+                      </p>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{loan.leaderName}</td>
+                    <td className="px-5 py-4 text-slate-600">
+                      {loan.leaderName}
+                    </td>
                     <td className="px-5 py-4 text-slate-600">{loan.members}</td>
-                    <td className="px-5 py-4 font-medium text-slate-800">{formatCurrency(loan.loanAmount)}</td>
-                    <td className="px-5 py-4 text-emerald-600 font-medium">{formatCurrency(loan.collected)}</td>
-                    <td className="px-5 py-4 text-amber-600 font-medium">{formatCurrency(loan.pending)}</td>
+                    <td className="px-5 py-4 font-medium text-slate-800">
+                      {formatCurrency(loan.loanAmount)}
+                    </td>
+                    <td className="px-5 py-4 text-emerald-600 font-medium">
+                      {formatCurrency(loan.collected)}
+                    </td>
+                    <td className="px-5 py-4 text-amber-600 font-medium">
+                      {formatCurrency(loan.pending)}
+                    </td>
                     <td className="px-5 py-4">{getStatusBadge(loan.status)}</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -283,7 +345,10 @@ const GroupLoans = () => {
       {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowForm(false)}></div>
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowForm(false)}
+          ></div>
 
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
@@ -300,7 +365,9 @@ const GroupLoans = () => {
 
             <form onSubmit={handleSave} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Group Name *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Group Name *
+                </label>
                 <input
                   type="text"
                   name="groupName"
@@ -313,7 +380,9 @@ const GroupLoans = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Group Leader *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Group Leader *
+                </label>
                 <input
                   type="text"
                   name="leaderName"
@@ -327,7 +396,9 @@ const GroupLoans = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Members *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Members *
+                  </label>
                   <input
                     type="number"
                     name="members"
@@ -339,7 +410,9 @@ const GroupLoans = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Loan Amount (₹) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Loan Amount (₹) *
+                  </label>
                   <input
                     type="number"
                     name="loanAmount"
@@ -354,7 +427,9 @@ const GroupLoans = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Interest Rate (%) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Interest Rate (%) *
+                  </label>
                   <input
                     type="number"
                     name="interestRate"
@@ -366,7 +441,9 @@ const GroupLoans = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Tenure (Months) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Tenure (Months) *
+                  </label>
                   <input
                     type="number"
                     name="tenure"
@@ -381,7 +458,9 @@ const GroupLoans = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Date *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Start Date *
+                  </label>
                   <input
                     type="date"
                     name="startDate"
@@ -392,7 +471,9 @@ const GroupLoans = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Status
+                  </label>
                   <select
                     name="status"
                     value={formData.status}

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -17,7 +16,7 @@ export default function GroupMemberManager({ groups }) {
   const [success, setSuccess] = useState("");
 
   const selectedGroup = groups.find(
-    (group) => String(group.id) === String(groupId)
+    (group) => String(group.id) === String(groupId),
   );
 
   const loadMembers = async () => {
@@ -82,9 +81,7 @@ export default function GroupMemberManager({ groups }) {
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">
-          Add Group Members
-        </h2>
+        <h2 className="text-lg font-bold text-slate-900">Add Group Members</h2>
         <p className="mb-5 mt-1 text-sm text-slate-500">
           Search your existing customers and add them to a group.
         </p>
@@ -119,9 +116,7 @@ export default function GroupMemberManager({ groups }) {
             </div>
             <div>
               <p className="text-xs text-blue-700">Current Members</p>
-              <p className="font-semibold text-slate-900">
-                {members.length}
-              </p>
+              <p className="font-semibold text-slate-900">{members.length}</p>
             </div>
             <div>
               <p className="text-xs text-blue-700">Plan Limit</p>
@@ -147,7 +142,10 @@ export default function GroupMemberManager({ groups }) {
       )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <form onSubmit={searchCustomers} className="flex flex-col gap-3 sm:flex-row">
+        <form
+          onSubmit={searchCustomers}
+          className="flex flex-col gap-3 sm:flex-row"
+        >
           <input
             className={inputClass}
             value={search}
@@ -172,8 +170,8 @@ export default function GroupMemberManager({ groups }) {
                 <option value="">Choose a customer</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    #{customer.id} — {customer.first_name}{" "}
-                    {customer.last_name} — {customer.mobile_number}
+                    #{customer.id} — {customer.first_name} {customer.last_name}{" "}
+                    — {customer.mobile_number}
                   </option>
                 ))}
               </select>
@@ -211,9 +209,7 @@ export default function GroupMemberManager({ groups }) {
         ) : loading ? (
           <p className="p-8 text-sm text-slate-500">Loading members...</p>
         ) : members.length === 0 ? (
-          <p className="p-8 text-sm text-slate-500">
-            No members added yet.
-          </p>
+          <p className="p-8 text-sm text-slate-500">No members added yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[550px] text-left text-sm">
@@ -229,15 +225,11 @@ export default function GroupMemberManager({ groups }) {
               <tbody className="divide-y divide-slate-100">
                 {members.map((member) => (
                   <tr key={member.id}>
-                    <td className="px-5 py-3">
-                      {member.customer}
-                    </td>
+                    <td className="px-5 py-3">{member.customer}</td>
                     <td className="px-5 py-3 font-medium">
                       {member.customer_name || "—"}
                     </td>
-                    <td className="px-5 py-3">
-                      {member.mobile_number || "—"}
-                    </td>
+                    <td className="px-5 py-3">{member.mobile_number || "—"}</td>
                     <td className="px-5 py-3">
                       {member.is_leader ? "Leader" : "Member"}
                     </td>

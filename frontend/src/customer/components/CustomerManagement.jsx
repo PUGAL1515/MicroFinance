@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -56,9 +55,7 @@ function StatCard({ title, value, icon, color }) {
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{title}</p>
-        <span className={`rounded-xl px-3 py-2 text-lg ${color}`}>
-          {icon}
-        </span>
+        <span className={`rounded-xl px-3 py-2 text-lg ${color}`}>{icon}</span>
       </div>
       <p className="mt-3 text-3xl font-bold text-slate-800">{value}</p>
     </div>
@@ -129,7 +126,8 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
             {fields.map(([name, label, required]) => (
               <label key={name} className="space-y-1.5">
                 <span className="text-sm font-medium text-slate-700">
-                  {label}{required ? " *" : ""}
+                  {label}
+                  {required ? " *" : ""}
                 </span>
                 <input
                   className={inputClass}
@@ -152,9 +150,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
             ))}
 
             <label className="space-y-1.5">
-              <span className="text-sm font-medium text-slate-700">
-                Gender
-              </span>
+              <span className="text-sm font-medium text-slate-700">Gender</span>
               <select
                 className={inputClass}
                 name="gender"
@@ -271,7 +267,11 @@ export default function CustomerManagement() {
         customer.last_name,
         customer.mobile_number,
         customer.email,
-      ].some((value) => String(value || "").toLowerCase().includes(term));
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(term),
+      );
 
       const matchesStatus =
         filter === "all" ||
@@ -301,12 +301,12 @@ export default function CustomerManagement() {
         {
           method: isEditing ? "PATCH" : "POST",
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (isEditing) {
         setCustomers((current) =>
-          current.map((c) => (c.id === saved.id ? saved : c))
+          current.map((c) => (c.id === saved.id ? saved : c)),
         );
       } else {
         setCustomers((current) => [saved, ...current]);
@@ -320,7 +320,7 @@ export default function CustomerManagement() {
 
   async function deleteCustomer(customer) {
     const confirmed = window.confirm(
-      `Delete ${customer.first_name} ${customer.last_name}?`
+      `Delete ${customer.first_name} ${customer.last_name}?`,
     );
     if (!confirmed) return;
 
@@ -338,20 +338,26 @@ export default function CustomerManagement() {
 
   function exportCSV() {
     const columns = [
-      "id", "first_name", "last_name", "mobile_number",
-      "email", "gender", "occupation", "monthly_income", "is_active",
+      "id",
+      "first_name",
+      "last_name",
+      "mobile_number",
+      "email",
+      "gender",
+      "occupation",
+      "monthly_income",
+      "is_active",
     ];
-    const escape = (value) =>
-      `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
     const csv = [
       columns.join(","),
       ...filteredCustomers.map((customer) =>
-        columns.map((key) => escape(customer[key])).join(",")
+        columns.map((key) => escape(customer[key])).join(","),
       ),
     ].join("\r\n");
 
     const url = URL.createObjectURL(
-      new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })
+      new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
     );
     const link = document.createElement("a");
     link.href = url;
@@ -464,10 +470,30 @@ export default function CustomerManagement() {
             )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard title="Total Customers" value={customers.length} icon="♙" color="bg-blue-50 text-blue-700" />
-              <StatCard title="Active Customers" value={activeCount} icon="✓" color="bg-green-50 text-green-700" />
-              <StatCard title="Inactive Customers" value={inactiveCount} icon="◷" color="bg-amber-50 text-amber-700" />
-              <StatCard title="Showing Results" value={filteredCustomers.length} icon="⌕" color="bg-violet-50 text-violet-700" />
+              <StatCard
+                title="Total Customers"
+                value={customers.length}
+                icon="♙"
+                color="bg-blue-50 text-blue-700"
+              />
+              <StatCard
+                title="Active Customers"
+                value={activeCount}
+                icon="✓"
+                color="bg-green-50 text-green-700"
+              />
+              <StatCard
+                title="Inactive Customers"
+                value={inactiveCount}
+                icon="◷"
+                color="bg-amber-50 text-amber-700"
+              />
+              <StatCard
+                title="Showing Results"
+                value={filteredCustomers.length}
+                icon="⌕"
+                color="bg-violet-50 text-violet-700"
+              />
             </div>
 
             <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -518,15 +544,22 @@ export default function CustomerManagement() {
                   <tbody className="divide-y divide-slate-100">
                     {loading ? (
                       <tr>
-                        <td colSpan="6" className="px-5 py-12 text-center text-slate-500">
+                        <td
+                          colSpan="6"
+                          className="px-5 py-12 text-center text-slate-500"
+                        >
                           Loading customers...
                         </td>
                       </tr>
                     ) : filteredCustomers.length === 0 ? (
                       <tr>
                         <td colSpan="6" className="px-5 py-12 text-center">
-                          <p className="font-semibold text-slate-700">No customers found</p>
-                          <p className="mt-1 text-slate-500">Try another search or add a customer.</p>
+                          <p className="font-semibold text-slate-700">
+                            No customers found
+                          </p>
+                          <p className="mt-1 text-slate-500">
+                            Try another search or add a customer.
+                          </p>
                         </td>
                       </tr>
                     ) : (
@@ -547,19 +580,25 @@ export default function CustomerManagement() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-5 py-4">{customer.mobile_number || "—"}</td>
-                          <td className="px-5 py-4">{customer.occupation || "—"}</td>
+                          <td className="px-5 py-4">
+                            {customer.mobile_number || "—"}
+                          </td>
+                          <td className="px-5 py-4">
+                            {customer.occupation || "—"}
+                          </td>
                           <td className="px-5 py-4">
                             {customer.monthly_income
                               ? `₹${Number(customer.monthly_income).toLocaleString("en-IN")}`
                               : "—"}
                           </td>
                           <td className="px-5 py-4">
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              customer.is_active
-                                ? "bg-green-50 text-green-700"
-                                : "bg-slate-100 text-slate-600"
-                            }`}>
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                customer.is_active
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
                               {customer.is_active ? "Active" : "Inactive"}
                             </span>
                           </td>
@@ -567,9 +606,11 @@ export default function CustomerManagement() {
                             <div className="flex justify-end gap-2">
                               <button
                                 title="View"
-                                onClick={() => window.alert(
-                                  `${customer.first_name} ${customer.last_name}\nMobile: ${customer.mobile_number || "—"}\nEmail: ${customer.email || "—"}`
-                                )}
+                                onClick={() =>
+                                  window.alert(
+                                    `${customer.first_name} ${customer.last_name}\nMobile: ${customer.mobile_number || "—"}\nEmail: ${customer.email || "—"}`,
+                                  )
+                                }
                                 className="rounded-lg border px-3 py-2 text-blue-700 hover:bg-blue-50"
                               >
                                 View
@@ -598,7 +639,8 @@ export default function CustomerManagement() {
               </div>
 
               <div className="border-t border-slate-100 px-5 py-4 text-sm text-slate-500">
-                Showing {filteredCustomers.length} of {customers.length} customers
+                Showing {filteredCustomers.length} of {customers.length}{" "}
+                customers
               </div>
             </section>
           </div>
