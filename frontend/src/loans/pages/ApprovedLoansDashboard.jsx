@@ -1,4 +1,6 @@
+
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Sidebar from "../../components/Sidebar";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -94,40 +96,53 @@ function groupName(application) {
 
 function Badge({ status }) {
   const styles = {
-    approved: "bg-blue-100 text-blue-700",
-    disbursed: "bg-emerald-100 text-emerald-700",
-    closed: "bg-slate-200 text-slate-700",
-    paid: "bg-emerald-100 text-emerald-700",
-    pending: "bg-amber-100 text-amber-800",
-    partial: "bg-orange-100 text-orange-800",
-    overdue: "bg-red-100 text-red-700",
-    rejected: "bg-red-100 text-red-700",
-    cancelled: "bg-slate-200 text-slate-700",
+    approved: "bg-blue-50 text-blue-700 ring-blue-200",
+    disbursed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    closed: "bg-slate-100 text-slate-600 ring-slate-200",
+    paid: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    pending: "bg-amber-50 text-amber-700 ring-amber-200",
+    partial: "bg-orange-50 text-orange-700 ring-orange-200",
+    overdue: "bg-red-50 text-red-700 ring-red-200",
+    rejected: "bg-red-50 text-red-700 ring-red-200",
+    cancelled: "bg-slate-100 text-slate-600 ring-slate-200",
   };
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+      className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold ring-1 ring-inset ${
         styles[String(status || "").toLowerCase()] ||
-        "bg-slate-100 text-slate-600"
+        "bg-slate-100 text-slate-600 ring-slate-200"
       }`}
     >
-      {String(status || "pending")
-        .replaceAll("_", " ")
-        .toUpperCase()}
+      {String(status || "pending").replaceAll("_", " ").toUpperCase()}
     </span>
   );
 }
 
-function StatCard({ title, value, subtitle, icon }) {
+function StatCard({ title, value, subtitle, icon, accent }) {
+  const accents = {
+    blue: "bg-blue-50 text-blue-700",
+    emerald: "bg-emerald-50 text-emerald-700",
+    red: "bg-red-50 text-red-700",
+    violet: "bg-violet-50 text-violet-700",
+  };
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-center justify-between">
+    <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-slate-500">{title}</p>
-        <span className="rounded-xl bg-blue-50 p-2 text-xl">{icon}</span>
+        <span
+          className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl ${
+            accents[accent] || accents.blue
+          }`}
+        >
+          {icon}
+        </span>
       </div>
-      <p className="mt-3 text-2xl font-extrabold text-slate-900">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+      <p className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        {value}
+      </p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{subtitle}</p>
     </div>
   );
 }
@@ -135,14 +150,24 @@ function StatCard({ title, value, subtitle, icon }) {
 function EmptyState({ title, message }) {
   return (
     <div className="px-5 py-14 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-2xl">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
         📋
       </div>
       <h3 className="mt-4 font-bold text-slate-800">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{message}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+        {message}
+      </p>
     </div>
   );
 }
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+const thClass =
+  "whitespace-nowrap px-4 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500";
+
+const tdClass = "whitespace-nowrap px-4 py-4 text-sm text-slate-600";
 
 export default function ApprovedLoansDashboard() {
   const [individualLoans, setIndividualLoans] = useState([]);
@@ -412,517 +437,604 @@ export default function ApprovedLoansDashboard() {
   ];
 
   return (
-    <div className="min-h-screen space-y-6 bg-slate-50 p-4 md:p-7">
-      <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <p className="text-sm font-bold text-blue-700">
-            SMLNEXGEN / Loan Management
-          </p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
-            Approved Loans
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Individual and group loan approvals, EMI schedules and outstanding
-            balances.
-          </p>
-        </div>
+    <div className="flex min-h-screen w-full bg-slate-50">
+      <Sidebar />
 
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50"
-        >
-          {loading ? "Refreshing..." : "↻ Refresh Dashboard"}
-        </button>
-      </header>
-
-      {errors.length > 0 && (
-        <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-bold">Some information could not be loaded.</p>
-          {errors.map((error) => (
-            <p key={error}>{error}</p>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Approved / Disbursed"
-          value={allLoans.length}
-          subtitle={`${individualActive.length} individual · ${groupActive.length} group`}
-          icon="💳"
-        />
-        <StatCard
-          title="EMIs Due Today"
-          value={individualDueToday.length + groupDueToday.length}
-          subtitle={`${money(dueTodayAmount)} outstanding in loaded schedules`}
-          icon="📅"
-        />
-        <StatCard
-          title="Overdue EMIs"
-          value={individualOverdue.length + groupOverdue.length}
-          subtitle={`${money(overdueAmount)} overdue in loaded schedules`}
-          icon="⚠️"
-        />
-        <StatCard
-          title="Paid Installments"
-          value={paidInstallments}
-          subtitle={`${totalInstallments} installments loaded`}
-          icon="✅"
-        />
-      </div>
-
-      {selectedLoan ? (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b bg-gradient-to-r from-blue-50 to-white p-5 md:p-6">
-            <button
-              onClick={() => setSelectedLoan(null)}
-              className="mb-4 text-sm font-bold text-blue-700 hover:text-blue-900"
-            >
-              ← Back to approved loans
-            </button>
-
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-                  {selectedLoan.recordType === "group"
-                    ? "Group Loan"
-                    : "Individual Loan"}{" "}
-                  · #{selectedLoan.id}
-                </p>
-                <h2 className="mt-1 text-xl font-extrabold text-slate-900">
-                  {selectedLoan.displayName}
-                </h2>
-                <p className="mt-2 text-sm text-slate-600">
-                  Approved amount:{" "}
-                  <span className="font-bold text-slate-900">
-                    {money(selectedLoan.displayAmount)}
-                  </span>
-                </p>
+      <main className="min-w-0 flex-1 overflow-x-hidden pt-16 md:pt-0">
+        <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-5 md:p-7 lg:p-8">
+          {/* Page Header */}
+          <header className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700">
+                <span className="h-2 w-2 rounded-full bg-blue-600" />
+                SMLNEXGEN / Loan Management
               </div>
-              <Badge status={selectedLoan.status} />
-            </div>
-          </div>
 
-          {selectedLoan.recordType === "group" &&
-            scheduleLoading[selectedLoan.id] && (
-              <p className="p-8 text-center text-sm text-slate-500">
-                Loading saved EMI schedule...
+              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                Approved Loans
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Manage approved individual and group loans, monitor EMI
+                schedules and track outstanding balances.
               </p>
-            )}
+            </div>
 
-          {selectedLoan.recordType === "group" &&
-            scheduleErrors[selectedLoan.id] && (
-              <div className="m-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                <p>{scheduleErrors[selectedLoan.id]}</p>
-                <button
-                  onClick={() => {
-                    setGroupSchedules((prev) => {
-                      const next = { ...prev };
-                      delete next[selectedLoan.id];
-                      return next;
-                    });
-                    openLoan(selectedLoan);
-                  }}
-                  className="mt-2 font-bold underline"
-                >
-                  Retry loading schedule
-                </button>
-              </div>
-            )}
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="text-lg">↻</span>
+              {loading ? "Refreshing..." : "Refresh Dashboard"}
+            </button>
+          </header>
 
-          {!(
-            selectedLoan.recordType === "group" &&
-            scheduleLoading[selectedLoan.id]
-          ) && (
-            <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-3">
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-500">
-                  Interest Rate
-                </p>
-                <p className="mt-1 text-lg font-extrabold text-slate-900">
-                  {selectedLoan.displayInterest ?? "—"}%
-                </p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-500">Tenure</p>
-                <p className="mt-1 text-lg font-extrabold text-slate-900">
-                  {selectedLoan.displayTenure ?? "—"}{" "}
-                  {selectedLoan.recordType === "group"
-                    ? "months"
-                    : "installments"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-500">
-                  Installments
-                </p>
-                <p className="mt-1 text-lg font-extrabold text-slate-900">
-                  {visibleEmis.length}
-                </p>
+          {/* API Errors */}
+          {errors.length > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div className="min-w-0 space-y-1 text-sm text-amber-900">
+                  <p className="font-bold">
+                    Some information could not be loaded.
+                  </p>
+                  {errors.map((error) => (
+                    <p key={error} className="break-words">
+                      {error}
+                    </p>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {selectedLoan.recordType === "group" &&
-          !scheduleLoading[selectedLoan.id] &&
-          !scheduleErrors[selectedLoan.id] &&
-          visibleEmis.length === 0 ? (
-            <EmptyState
-              title="EMI schedule not found"
-              message="This application has no saved installments yet. Open Loan Processing, approve the application and generate its EMI schedule first."
+          {/* Dashboard Statistics */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              title="Approved / Disbursed"
+              value={allLoans.length}
+              subtitle={`${individualActive.length} individual · ${groupActive.length} group`}
+              icon="💳"
+              accent="blue"
             />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px] text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="p-4">EMI #</th>
-                    <th className="p-4">Due Date</th>
-                    <th className="p-4">Principal</th>
-                    <th className="p-4">Interest</th>
-                    <th className="p-4">EMI Amount</th>
-                    <th className="p-4">Paid</th>
-                    <th className="p-4">Balance</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {visibleEmis.map((emi) => {
-                    const groupLoan = selectedLoan.recordType === "group";
-                    const due =
-                      Number(groupLoan ? emi.total_due : emi.amount_due) || 0;
-                    const paid =
-                      Number(groupLoan ? emi.paid_amount : emi.amount_paid) ||
-                      0;
-                    const balance = Math.max(0, due - paid);
 
-                    let displayStatus = String(
-                      emi.status || "pending",
-                    ).toLowerCase();
+            <StatCard
+              title="EMIs Due Today"
+              value={individualDueToday.length + groupDueToday.length}
+              subtitle={`${money(dueTodayAmount)} outstanding in loaded schedules`}
+              icon="📅"
+              accent="emerald"
+            />
 
-                    if (balance <= 0 && due > 0) {
-                      displayStatus = "paid";
-                    } else if (paid > 0 && balance > 0) {
-                      displayStatus = "partial";
-                    } else if (emi.due_date < today && balance > 0) {
-                      displayStatus = "overdue";
-                    }
+            <StatCard
+              title="Overdue EMIs"
+              value={individualOverdue.length + groupOverdue.length}
+              subtitle={`${money(overdueAmount)} overdue in loaded schedules`}
+              icon="⚠️"
+              accent="red"
+            />
 
-                    return (
-                      <tr key={emi.id} className="hover:bg-blue-50/40">
-                        <td className="p-4 font-bold">
-                          {emi.installment_number}
-                        </td>
-                        <td className="p-4">{emi.due_date || "—"}</td>
-                        <td className="p-4">
-                          {money(
-                            groupLoan
-                              ? emi.principal_due
-                              : emi.principal_amount,
-                          )}
-                        </td>
-                        <td className="p-4">
-                          {money(
-                            groupLoan ? emi.interest_due : emi.interest_amount,
-                          )}
-                        </td>
-                        <td className="p-4 font-bold">{money(due)}</td>
-                        <td className="p-4 text-emerald-700">{money(paid)}</td>
-                        <td className="p-4 font-bold text-red-700">
-                          {money(balance)}
-                        </td>
-                        <td className="p-4">
-                          <Badge status={displayStatus} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {selectedLoan.recordType === "individual" &&
-                    visibleEmis.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="p-10 text-center text-slate-500"
-                        >
-                          No EMI schedule found for this individual loan.
-                        </td>
-                      </tr>
-                    )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      ) : (
-        <>
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setTab(item.id)}
-                className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
-                  tab === item.id
-                    ? "bg-blue-700 text-white shadow-sm"
-                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+            <StatCard
+              title="Paid Installments"
+              value={paidInstallments}
+              subtitle={`${totalInstallments} installments loaded`}
+              icon="✅"
+              accent="violet"
+            />
           </div>
 
-          {tab === "today" || tab === "overdue" ? (
+          {/* Selected Loan EMI Details */}
+          {selectedLoan ? (
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b p-5">
-                <h2 className="text-lg font-extrabold text-slate-900">
-                  {tab === "today" ? "Today's EMI Due" : "Overdue EMI List"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Only installments from the schedules currently loaded are
-                  counted.
-                </p>
-              </div>
+              <div className="border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-white p-5 sm:p-6">
+                <button
+                  onClick={() => setSelectedLoan(null)}
+                  className="mb-5 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  ← Back to approved loans
+                </button>
 
-              {(() => {
-                const individualRows =
-                  tab === "today" ? individualDueToday : individualOverdue;
-                const groupRows =
-                  tab === "today" ? groupDueToday : groupOverdue;
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                      {selectedLoan.recordType === "group"
+                        ? "Group Loan"
+                        : "Individual Loan"}{" "}
+                      · #{selectedLoan.id}
+                    </p>
 
-                if (!individualRows.length && !groupRows.length) {
-                  return (
-                    <EmptyState
-                      title="No installments found"
-                      message="No outstanding installments match this date category in the schedules currently loaded."
-                    />
-                  );
-                }
-                return (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[750px] text-left text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                        <tr>
-                          <th className="p-4">Loan Type</th>
-                          <th className="p-4">Customer / Group</th>
-                          <th className="p-4">EMI #</th>
-                          <th className="p-4">Due Date</th>
-                          <th className="p-4">EMI Amount</th>
-                          <th className="p-4">Paid</th>
-                          <th className="p-4">Balance</th>
-                          <th className="p-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {individualRows.map((emi) => (
-                          <tr key={`individual-${emi.id}`}>
-                            <td className="p-4">Individual</td>
-                            <td className="p-4 font-semibold">
-                              {emi.loan ? customerName(emi.loan) : "—"}
-                            </td>
-                            <td className="p-4">{emi.installment_number}</td>
-                            <td className="p-4">{emi.due_date}</td>
-                            <td className="p-4">{money(emi.due)}</td>
-                            <td className="p-4">{money(emi.paid)}</td>
-                            <td className="p-4 font-bold text-red-700">
-                              {money(emi.balance)}
-                            </td>
-                            <td className="p-4">
-                              <Badge status={emi.displayStatus} />
-                            </td>
-                          </tr>
-                        ))}
-                        {groupRows.map((emi) => {
-                          const application = groupActive.find(
-                            (loan) =>
-                              Number(loan.id) === Number(emi.application),
-                          );
-                          const due = Number(emi.total_due || 0);
-                          const paid = Number(emi.paid_amount || 0);
-                          const balance = Math.max(0, due - paid);
+                    <h2 className="mt-2 text-xl font-extrabold text-slate-900 sm:text-2xl">
+                      {selectedLoan.displayName}
+                    </h2>
 
-                          return (
-                            <tr key={`group-${emi.id}`}>
-                              <td className="p-4">Group</td>
-                              <td className="p-4 font-semibold">
-                                {application
-                                  ? groupName(application)
-                                  : "Group loan"}
-                              </td>
-                              <td className="p-4">{emi.installment_number}</td>
-                              <td className="p-4">{emi.due_date}</td>
-                              <td className="p-4">{money(due)}</td>
-                              <td className="p-4">{money(paid)}</td>
-                              <td className="p-4 font-bold text-red-700">
-                                {money(balance)}
-                              </td>
-                              <td className="p-4">
-                                <Badge
-                                  status={
-                                    balance <= 0
-                                      ? "paid"
-                                      : paid > 0
-                                        ? "partial"
-                                        : emi.due_date < today
-                                          ? "overdue"
-                                          : "pending"
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Approved amount
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-blue-800">
+                      {money(selectedLoan.displayAmount)}
+                    </p>
                   </div>
-                );
-              })()}
-            </section>
-          ) : (
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-4 border-b p-5 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-lg font-extrabold text-slate-900">
-                    Approved Loans Register
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {filteredLoans.length} loan records found
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search loan or customer"
-                    className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <select
-                    value={loanType}
-                    onChange={(event) => setLoanType(event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm"
-                  >
-                    <option value="all">All loan types</option>
-                    <option value="individual">Individual loans</option>
-                    <option value="group">Group loans</option>
-                  </select>
-                  <select
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm"
-                  >
-                    <option value="all">All statuses</option>
-                    <option value="approved">Approved</option>
-                    <option value="disbursed">Disbursed</option>
-                  </select>
+
+                  <Badge status={selectedLoan.status} />
                 </div>
               </div>
-              {loading ? (
-                <div className="p-14 text-center text-slate-500">
-                  Loading approved loans...
+
+              {selectedLoan.recordType === "group" &&
+                scheduleLoading[selectedLoan.id] && (
+                  <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
+                    <div className="h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
+                    <p className="text-sm font-medium text-slate-500">
+                      Loading saved EMI schedule...
+                    </p>
+                  </div>
+                )}
+
+              {selectedLoan.recordType === "group" &&
+                scheduleErrors[selectedLoan.id] && (
+                  <div className="m-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <p>{scheduleErrors[selectedLoan.id]}</p>
+                    <button
+                      onClick={() => {
+                        setGroupSchedules((prev) => {
+                          const next = { ...prev };
+                          delete next[selectedLoan.id];
+                          return next;
+                        });
+                        openLoan(selectedLoan);
+                      }}
+                      className="mt-3 rounded-lg bg-red-100 px-3 py-2 font-bold text-red-700 transition hover:bg-red-200"
+                    >
+                      Retry loading schedule
+                    </button>
+                  </div>
+                )}
+
+              {!(
+                selectedLoan.recordType === "group" &&
+                scheduleLoading[selectedLoan.id]
+              ) && (
+                <div className="grid grid-cols-1 gap-3 border-b border-slate-100 p-5 sm:grid-cols-3 sm:p-6">
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-semibold text-slate-500">
+                      Interest Rate
+                    </p>
+                    <p className="mt-2 text-xl font-extrabold text-slate-900">
+                      {selectedLoan.displayInterest ?? "—"}%
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-semibold text-slate-500">
+                      Tenure
+                    </p>
+                    <p className="mt-2 text-xl font-extrabold text-slate-900">
+                      {selectedLoan.displayTenure ?? "—"}{" "}
+                      {selectedLoan.recordType === "group"
+                        ? "months"
+                        : "installments"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-semibold text-slate-500">
+                      Installments
+                    </p>
+                    <p className="mt-2 text-xl font-extrabold text-slate-900">
+                      {visibleEmis.length}
+                    </p>
+                  </div>
                 </div>
-              ) : filteredLoans.length === 0 ? (
+              )}
+
+              {selectedLoan.recordType === "group" &&
+              !scheduleLoading[selectedLoan.id] &&
+              !scheduleErrors[selectedLoan.id] &&
+              visibleEmis.length === 0 ? (
                 <EmptyState
-                  title="No approved loans found"
-                  message="Try another filter. If you expected a group loan here, confirm that the group application API returns status approved or disbursed."
+                  title="EMI schedule not found"
+                  message="This application has no saved installments yet. Open Loan Processing, approve the application and generate its EMI schedule first."
                 />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1000px] text-left text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <table className="w-full min-w-[850px] text-left">
+                    <thead className="bg-slate-50">
                       <tr>
-                        <th className="p-4">Loan / Customer</th>
-                        <th className="p-4">Type</th>
-                        <th className="p-4">Approved Amount</th>
-                        <th className="p-4">Interest</th>
-                        <th className="p-4">Tenure</th>
-                        <th className="p-4">Repayment</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">EMI Schedule</th>
+                        <th className={thClass}>EMI #</th>
+                        <th className={thClass}>Due Date</th>
+                        <th className={thClass}>Principal</th>
+                        <th className={thClass}>Interest</th>
+                        <th className={thClass}>EMI Amount</th>
+                        <th className={thClass}>Paid</th>
+                        <th className={thClass}>Balance</th>
+                        <th className={thClass}>Status</th>
                       </tr>
                     </thead>
+
                     <tbody className="divide-y divide-slate-100">
-                      {filteredLoans.map((loan) => (
-                        <tr
-                          key={`${loan.recordType}-${loan.id}`}
-                          className="transition hover:bg-blue-50/40"
-                        >
-                          <td className="p-4">
-                            <p className="font-bold text-slate-900">
-                              {loan.recordType === "group"
-                                ? `Group Loan #${loan.id}`
-                                : `Loan #${loan.id}`}
-                            </p>
-                            <p className="mt-1 text-slate-500">
-                              {loan.displayName}
-                            </p>
-                            {loan.application_number && (
-                              <p className="mt-1 text-xs text-slate-400">
-                                {loan.application_number}
-                              </p>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
-                                loan.recordType === "group"
-                                  ? "bg-violet-100 text-violet-700"
-                                  : "bg-sky-100 text-sky-700"
-                              }`}
+                      {visibleEmis.map((emi) => {
+                        const groupLoan = selectedLoan.recordType === "group";
+                        const due =
+                          Number(groupLoan ? emi.total_due : emi.amount_due) ||
+                          0;
+                        const paid =
+                          Number(
+                            groupLoan ? emi.paid_amount : emi.amount_paid,
+                          ) || 0;
+                        const balance = Math.max(0, due - paid);
+
+                        let displayStatus = String(
+                          emi.status || "pending",
+                        ).toLowerCase();
+
+                        if (balance <= 0 && due > 0) {
+                          displayStatus = "paid";
+                        } else if (paid > 0 && balance > 0) {
+                          displayStatus = "partial";
+                        } else if (emi.due_date < today && balance > 0) {
+                          displayStatus = "overdue";
+                        }
+
+                        return (
+                          <tr
+                            key={emi.id}
+                            className="transition hover:bg-blue-50/50"
+                          >
+                            <td className={`${tdClass} font-bold text-slate-900`}>
+                              {emi.installment_number}
+                            </td>
+                            <td className={tdClass}>{emi.due_date || "—"}</td>
+                            <td className={tdClass}>
+                              {money(
+                                groupLoan
+                                  ? emi.principal_due
+                                  : emi.principal_amount,
+                              )}
+                            </td>
+                            <td className={tdClass}>
+                              {money(
+                                groupLoan
+                                  ? emi.interest_due
+                                  : emi.interest_amount,
+                              )}
+                            </td>
+                            <td className={`${tdClass} font-bold text-slate-900`}>
+                              {money(due)}
+                            </td>
+                            <td className={`${tdClass} font-semibold text-emerald-700`}>
+                              {money(paid)}
+                            </td>
+                            <td className={`${tdClass} font-bold text-red-700`}>
+                              {money(balance)}
+                            </td>
+                            <td className={tdClass}>
+                              <Badge status={displayStatus} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {selectedLoan.recordType === "individual" &&
+                        visibleEmis.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={8}
+                              className="p-10 text-center text-sm text-slate-500"
                             >
-                              {loan.recordType === "group"
-                                ? "GROUP"
-                                : "INDIVIDUAL"}
-                            </span>
-                          </td>
-                          <td className="p-4 font-extrabold text-slate-900">
-                            {money(loan.displayAmount)}
-                          </td>
-                          <td className="p-4">
-                            {loan.displayInterest ?? "—"}%
-                          </td>
-                          <td className="p-4">
-                            {loan.displayTenure ?? "—"}{" "}
-                            {loan.recordType === "group"
-                              ? "months"
-                              : "installments"}
-                          </td>
-                          <td className="p-4 capitalize">
-                            {(
-                              loan.repayment_frequency ||
-                              loan.application?.repayment_frequency ||
-                              "—"
-                            ).replaceAll("_", " ")}
-                          </td>
-                          <td className="p-4">
-                            <Badge status={loan.status} />
-                          </td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => openLoan(loan)}
-                              className="rounded-xl bg-blue-700 px-3 py-2.5 text-xs font-bold text-white hover:bg-blue-800"
-                            >
-                              View EMI Schedule →
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              No EMI schedule found for this individual loan.
+                            </td>
+                          </tr>
+                        )}
                     </tbody>
                   </table>
                 </div>
               )}
             </section>
-          )}
-        </>
-      )}
+          ) : (
+            <>
+              {/* Navigation Tabs */}
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {tabs.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setTab(item.id)}
+                    className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                      tab === item.id
+                        ? "bg-blue-700 text-white shadow-sm"
+                        : "border border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
-      <p className="text-xs leading-5 text-slate-400">
-        SMLNEXGEN · Data is loaded from the configured backend APIs. Group EMI
-        totals on this dashboard include only group schedules opened and loaded
-        during this session. For accurate collection balances, the backend must
-        update each installment's paid amount and status after recording
-        payment.
-      </p>
+              {/* Due Today / Overdue */}
+              {tab === "today" || tab === "overdue" ? (
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="border-b border-slate-100 p-5 sm:p-6">
+                    <h2 className="text-lg font-extrabold text-slate-900">
+                      {tab === "today" ? "Today's EMI Due" : "Overdue EMI List"}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Only installments from the schedules currently loaded
+                      are counted.
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const individualRows =
+                      tab === "today" ? individualDueToday : individualOverdue;
+                    const groupRows =
+                      tab === "today" ? groupDueToday : groupOverdue;
+
+                    if (!individualRows.length && !groupRows.length) {
+                      return (
+                        <EmptyState
+                          title="No installments found"
+                          message="No outstanding installments match this date category in the schedules currently loaded."
+                        />
+                      );
+                    }
+
+                    return (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[750px] text-left">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className={thClass}>Loan Type</th>
+                              <th className={thClass}>Customer / Group</th>
+                              <th className={thClass}>EMI #</th>
+                              <th className={thClass}>Due Date</th>
+                              <th className={thClass}>EMI Amount</th>
+                              <th className={thClass}>Paid</th>
+                              <th className={thClass}>Balance</th>
+                              <th className={thClass}>Status</th>
+                            </tr>
+                          </thead>
+
+                          <tbody className="divide-y divide-slate-100">
+                            {individualRows.map((emi) => (
+                              <tr
+                                key={`individual-${emi.id}`}
+                                className="hover:bg-blue-50/50"
+                              >
+                                <td className={tdClass}>Individual</td>
+                                <td className={`${tdClass} font-semibold text-slate-900`}>
+                                  {emi.loan ? customerName(emi.loan) : "—"}
+                                </td>
+                                <td className={tdClass}>
+                                  {emi.installment_number}
+                                </td>
+                                <td className={tdClass}>{emi.due_date}</td>
+                                <td className={tdClass}>{money(emi.due)}</td>
+                                <td className={tdClass}>{money(emi.paid)}</td>
+                                <td className={`${tdClass} font-bold text-red-700`}>
+                                  {money(emi.balance)}
+                                </td>
+                                <td className={tdClass}>
+                                  <Badge status={emi.displayStatus} />
+                                </td>
+                              </tr>
+                            ))}
+
+                            {groupRows.map((emi) => {
+                              const application = groupActive.find(
+                                (loan) =>
+                                  Number(loan.id) === Number(emi.application),
+                              );
+                              const due = Number(emi.total_due || 0);
+                              const paid = Number(emi.paid_amount || 0);
+                              const balance = Math.max(0, due - paid);
+
+                              return (
+                                <tr
+                                  key={`group-${emi.id}`}
+                                  className="hover:bg-blue-50/50"
+                                >
+                                  <td className={tdClass}>Group</td>
+                                  <td className={`${tdClass} font-semibold text-slate-900`}>
+                                    {application
+                                      ? groupName(application)
+                                      : "Group loan"}
+                                  </td>
+                                  <td className={tdClass}>
+                                    {emi.installment_number}
+                                  </td>
+                                  <td className={tdClass}>{emi.due_date}</td>
+                                  <td className={tdClass}>{money(due)}</td>
+                                  <td className={tdClass}>{money(paid)}</td>
+                                  <td className={`${tdClass} font-bold text-red-700`}>
+                                    {money(balance)}
+                                  </td>
+                                  <td className={tdClass}>
+                                    <Badge
+                                      status={
+                                        balance <= 0
+                                          ? "paid"
+                                          : paid > 0
+                                            ? "partial"
+                                            : emi.due_date < today
+                                              ? "overdue"
+                                              : "pending"
+                                      }
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </section>
+              ) : (
+                /* Approved Loans Register */
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <h2 className="text-lg font-extrabold text-slate-900">
+                        Approved Loans Register
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {filteredLoans.length} loan records found
+                      </p>
+                    </div>
+
+                    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:max-w-2xl lg:grid-cols-3">
+                      <input
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search loan or customer"
+                        className={inputClass}
+                      />
+
+                      <select
+                        value={loanType}
+                        onChange={(event) => setLoanType(event.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="all">All loan types</option>
+                        <option value="individual">Individual loans</option>
+                        <option value="group">Group loans</option>
+                      </select>
+
+                      <select
+                        value={statusFilter}
+                        onChange={(event) =>
+                          setStatusFilter(event.target.value)
+                        }
+                        className={inputClass}
+                      >
+                        <option value="all">All statuses</option>
+                        <option value="approved">Approved</option>
+                        <option value="disbursed">Disbursed</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center gap-3 p-14">
+                      <div className="h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
+                      <p className="text-sm font-medium text-slate-500">
+                        Loading approved loans...
+                      </p>
+                    </div>
+                  ) : filteredLoans.length === 0 ? (
+                    <EmptyState
+                      title="No approved loans found"
+                      message="Try another filter. If you expected a group loan here, confirm that the group application API returns status approved or disbursed."
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1000px] text-left">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className={thClass}>Loan / Customer</th>
+                            <th className={thClass}>Type</th>
+                            <th className={thClass}>Approved Amount</th>
+                            <th className={thClass}>Interest</th>
+                            <th className={thClass}>Tenure</th>
+                            <th className={thClass}>Repayment</th>
+                            <th className={thClass}>Status</th>
+                            <th className={thClass}>EMI Schedule</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredLoans.map((loan) => (
+                            <tr
+                              key={`${loan.recordType}-${loan.id}`}
+                              className="transition hover:bg-blue-50/50"
+                            >
+                              <td className="px-4 py-4">
+                                <p className="font-bold text-slate-900">
+                                  {loan.recordType === "group"
+                                    ? `Group Loan #${loan.id}`
+                                    : `Loan #${loan.id}`}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                  {loan.displayName}
+                                </p>
+                                {loan.application_number && (
+                                  <p className="mt-1 text-xs text-slate-400">
+                                    {loan.application_number}
+                                  </p>
+                                )}
+                              </td>
+
+                              <td className={tdClass}>
+                                <span
+                                  className={`inline-flex rounded-lg px-2.5 py-1 text-[11px] font-bold ${
+                                    loan.recordType === "group"
+                                      ? "bg-violet-50 text-violet-700"
+                                      : "bg-sky-50 text-sky-700"
+                                  }`}
+                                >
+                                  {loan.recordType === "group"
+                                    ? "GROUP"
+                                    : "INDIVIDUAL"}
+                                </span>
+                              </td>
+
+                              <td className={`${tdClass} font-extrabold text-slate-900`}>
+                                {money(loan.displayAmount)}
+                              </td>
+
+                              <td className={tdClass}>
+                                {loan.displayInterest ?? "—"}%
+                              </td>
+
+                              <td className={tdClass}>
+                                {loan.displayTenure ?? "—"}{" "}
+                                {loan.recordType === "group"
+                                  ? "months"
+                                  : "installments"}
+                              </td>
+
+                              <td className={`${tdClass} capitalize`}>
+                                {(
+                                  loan.repayment_frequency ||
+                                  loan.application?.repayment_frequency ||
+                                  "—"
+                                ).replaceAll("_", " ")}
+                              </td>
+
+                              <td className={tdClass}>
+                                <Badge status={loan.status} />
+                              </td>
+
+                              <td className={tdClass}>
+                                <button
+                                  onClick={() => openLoan(loan)}
+                                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-blue-700 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800"
+                                >
+                                  View EMI Schedule
+                                  <span>→</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              )}
+            </>
+          )}
+
+          <footer className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
+            <span className="font-bold text-slate-700">SMLNEXGEN</span>
+            {" · "}Data is loaded from the configured backend APIs. Group EMI
+            totals on this dashboard include only group schedules opened and
+            loaded during this session. For accurate collection balances, the
+            backend must update each installment's paid amount and status
+            after recording payment.
+          </footer>
+        </div>
+      </main>
     </div>
   );
 }
