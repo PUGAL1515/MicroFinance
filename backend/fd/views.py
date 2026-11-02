@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.utils import timezone
 from accounts.permissions import IsRD_FD_Admin, IsSuperAdmin
 from .models import FDProduct, FDAccount, FDTransaction
-from .serializers import FDProductSerializer, FDAccountSerializer, FDTransactionSerializer
+from .serializers import FDProductSerializer, FDAccountSerializer
 
 
 # ==================== PRODUCT (Super Admin only) ====================
