@@ -107,18 +107,24 @@ export const loanApi = {
     ),
 
   // Disbursement
-  disburseLoan: (id) =>
-    request(`/api/group-loan/applications/${id}/disburse/`, json("POST", {})),
-  //   disburseLoan: (applicationId) =>
-  // api.post(
-  //   `/api/group-loan/applications/${applicationId}/disburse/`,
-  //   {}
-  // ),
+ disburseLoan: (id, data = {}) =>
+  request(
+    `/api/group-loan/applications/${id}/disburse/`,
+    json("POST", data),
+  ),
 
   // Collection
+  // Collection
+
+  // Collection
+  getSchedule: (applicationId) =>
+    request(
+      `/api/group-loan/applications/${applicationId}/installments/`
+    ),
+
   recordPayment: (installmentId, data) =>
     request(
       `/api/group-loan/installments/${installmentId}/payments/`,
-      json("POST", data),
+      json("POST", data)
     ),
-};
+}

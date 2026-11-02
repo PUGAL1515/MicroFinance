@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { loanApi } from "../loanApi";
 
@@ -7,7 +8,7 @@ import GroupLoanPlanList from "../components/GroupLoanPlanList";
 import GroupCreateForm from "../components/GroupCreateForm";
 import GroupMemberManager from "../components/GroupMemberManager";
 import GroupLoanReports from "../components/GroupLoanReports";
-
+import GroupLoanCollection from "../components/GroupLoanCollection";
 import KYCVerification from "../../customer/components/KYCVerification";
 import GroupKYCVerification from "../../customer/components/GroupKYCVerification";
 import GroupLoanWorkflow from "../components/GroupLoanWorkflow";
@@ -19,6 +20,10 @@ const navigation = [
   { id: "members", label: "Members", icon: "♙" },
   { id: "kyc", label: "KYC Verification", icon: "✓" },
   { id: "loan-processing", label: "Loan Processing", icon: "₹" },
+  {
+  id: "loan-collections",
+  label: "Loan Collections",
+},
   { id: "reports", label: "Reports", icon: "▥" },
 ];
 
@@ -48,6 +53,11 @@ const pageTitles = {
     description:
       "Submit applications, approve loans, generate EMI schedules and record collections.",
   },
+  "loan-collections": {
+  title: "Loan Collections",
+  description:
+    "Manage disbursed group loans, EMI schedules and repayments.",
+},
   reports: {
     title: "Group Loan Reports",
     description: "Review lending and repayment summaries.",
@@ -59,6 +69,72 @@ function normalizeList(data) {
   if (Array.isArray(data?.results)) return data.results;
   if (Array.isArray(data?.data)) return data.data;
   return [];
+}
+
+function LoadingState() {
+  return (
+    <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-10 shadow-sm">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
+      <p className="mt-4 text-sm font-semibold text-slate-600">
+        Loading group loan data...
+      </p>
+      <p className="mt-1 text-xs text-slate-400">
+        Please wait while we fetch your information.
+      </p>
+    </div>
+  );
+}
+
+function ErrorState({ error, onRetry }) {
+  return (
+    <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-2xl">
+          ⚠️
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold text-slate-900">
+            Unable to load group loan data
+          </h3>
+          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-red-600">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-red-700"
+          >
+            <span>↻</span>
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GroupStatus({ status }) {
+  const normalized = String(status || "forming").toLowerCase();
+
+  const styles = {
+    active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    forming: "bg-amber-50 text-amber-700 ring-amber-200",
+    pending: "bg-blue-50 text-blue-700 ring-blue-200",
+    closed: "bg-slate-100 text-slate-600 ring-slate-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ring-1 ring-inset ${
+        styles[normalized] ||
+        "bg-slate-100 text-slate-600 ring-slate-200"
+      }`}
+    >
+      {normalized.replaceAll("_", " ").toUpperCase()}
+    </span>
+  );
 }
 
 export default function GroupLoanManagement() {
@@ -127,11 +203,19 @@ export default function GroupLoanManagement() {
 
   const renderGroups = () => (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+              Group Management
+            </span>
+          </div>
+
+          <h2 className="mt-2 text-lg font-extrabold text-slate-900">
             Registered Groups
           </h2>
+
           <p className="mt-1 text-sm text-slate-500">
             View borrower groups and their member counts.
           </p>
@@ -140,135 +224,186 @@ export default function GroupLoanManagement() {
         <button
           type="button"
           onClick={() => setShowGroupForm(true)}
-          className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
         >
-          + Create Group
+          <span className="text-lg">+</span>
+          Create Group
         </button>
       </div>
 
       {groups.length === 0 ? (
-        <div className="px-6 py-14 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl text-slate-500">
+        <div className="px-6 py-16 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-3xl text-blue-700">
             ♧
           </div>
-          <h3 className="mt-4 font-semibold text-slate-800">No groups found</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Create your first borrower group to get started.
+
+          <h3 className="mt-5 font-bold text-slate-800">
+            No groups found
+          </h3>
+
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+            Create your first borrower group to get started with group lending.
           </p>
+
           <button
             type="button"
             onClick={() => setShowGroupForm(true)}
-            className="mt-5 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
+            className="mt-5 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
           >
             + Create your first group
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-4">Group Name</th>
-                <th className="px-5 py-4">Group Code</th>
-                <th className="px-5 py-4">Loan Plan</th>
-                <th className="px-5 py-4">Members</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">Action</th>
-              </tr>
-            </thead>
+        <>
+          {/* Desktop Table */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[750px] text-left text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  {[
+                    "Group Name",
+                    "Group Code",
+                    "Loan Plan",
+                    "Members",
+                    "Status",
+                    "Action",
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      className="whitespace-nowrap px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500"
+                    >
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-            <tbody className="divide-y divide-slate-100">
-              {groups.map((group) => {
-                const status = String(group.status || "forming");
-                const isActive = status === "active";
-
-                return (
-                  <tr key={group.id} className="transition hover:bg-blue-50/40">
-                    <td className="px-5 py-4 font-semibold text-slate-900">
-                      {group.name || "Unnamed Group"}
+              <tbody className="divide-y divide-slate-100">
+                {groups.map((group) => (
+                  <tr
+                    key={group.id}
+                    className="transition hover:bg-blue-50/40"
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-bold text-slate-900">
+                        {group.name || "Unnamed Group"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Group ID: #{group.id}
+                      </p>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">
+
+                    <td className="px-5 py-4 font-medium text-slate-600">
                       {group.group_code || "—"}
                     </td>
+
                     <td className="px-5 py-4 text-slate-600">
                       {group.plan_name || group.plan || "—"}
                     </td>
+
                     <td className="px-5 py-4">
-                      <span className="rounded-lg bg-blue-50 px-3 py-1 font-semibold text-blue-700">
+                      <span className="inline-flex min-w-9 justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
                         {group.active_member_count ?? group.member_count ?? 0}
                       </span>
                     </td>
+
                     <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          isActive
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {status.toUpperCase()}
-                      </span>
+                      <GroupStatus status={group.status} />
                     </td>
+
                     <td className="px-5 py-4">
                       <button
                         type="button"
                         onClick={() => changePage("members")}
-                        className="rounded-lg border border-slate-200 px-3 py-2 font-medium text-blue-700 hover:bg-blue-50"
+                        className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50"
                       >
-                        View Members
+                        View Members →
                       </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="grid gap-3 p-4 md:hidden">
+            {groups.map((group) => (
+              <div
+                key={group.id}
+                className="rounded-xl border border-slate-200 bg-white p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-bold text-slate-900">
+                      {group.name || "Unnamed Group"}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {group.group_code || `Group #${group.id}`}
+                    </p>
+                  </div>
+                  <GroupStatus status={group.status} />
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      Loan Plan
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-800">
+                      {group.plan_name || group.plan || "—"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-blue-50 p-3">
+                    <p className="text-[11px] font-semibold text-blue-600">
+                      Members
+                    </p>
+                    <p className="mt-1 text-lg font-extrabold text-blue-800">
+                      {group.active_member_count ?? group.member_count ?? 0}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => changePage("members")}
+                  className="mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  View Members →
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
-      <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-        Total registered groups:{" "}
-        <span className="font-semibold text-slate-700">{groups.length}</span>
+      <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-xs text-slate-500">
+        <span>Total registered groups</span>
+        <span className="rounded-lg bg-white px-3 py-1.5 font-bold text-slate-800 shadow-sm">
+          {groups.length}
+        </span>
       </div>
     </section>
   );
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
-          <p className="mt-4 text-sm font-medium text-slate-600">
-            Loading group loan data...
-          </p>
-        </div>
-      );
+      return <LoadingState />;
     }
 
     if (error && active !== "kyc" && active !== "loan-processing") {
-      return (
-        <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900">
-            Unable to load group loan data
-          </h3>
-          <p className="mt-2 whitespace-pre-line text-sm text-red-600">
-            {error}
-          </p>
-          <button
-            type="button"
-            onClick={loadData}
-            className="mt-4 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            Try Again
-          </button>
-        </div>
-      );
+      return <ErrorState error={error} onRetry={loadData} />;
     }
 
     if (active === "dashboard") {
       return (
         <div className="space-y-6">
-          <GroupLoanStats plans={plans} groups={groups} loading={loading} />
+          <GroupLoanStats
+            plans={plans}
+            groups={groups}
+            loading={loading}
+          />
 
           <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
             <GroupLoanPlanList
@@ -282,6 +417,7 @@ export default function GroupLoanManagement() {
                 openPlanEdit(plan);
               }}
             />
+
             {renderGroups()}
           </div>
         </div>
@@ -341,7 +477,9 @@ export default function GroupLoanManagement() {
     if (active === "loan-processing") {
       return <GroupLoanWorkflow groups={groups} />;
     }
-
+   if(active === "loan-collections"){
+      return  <GroupLoanCollection groups={groups} />
+}
     if (active === "reports") {
       return <GroupLoanReports groups={groups} plans={plans} />;
     }
@@ -350,6 +488,7 @@ export default function GroupLoanManagement() {
   };
 
   const page = pageTitles[active] || pageTitles.dashboard;
+
   const heading =
     showPlanForm && active === "plans"
       ? editingPlan
@@ -367,45 +506,54 @@ export default function GroupLoanManagement() {
         : page.description;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-[1800px] px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-900 text-xl font-bold text-white shadow-md">
+    <div className="min-h-screen w-full bg-slate-50 text-slate-800">
+      {/* Top Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+        <div className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8">
+          <div className="flex min-h-[76px] items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-900 text-xl font-extrabold text-white shadow-md">
                 S
               </div>
-              <div>
-                <p className="text-lg font-extrabold tracking-tight text-slate-900">
+
+              <div className="min-w-0">
+                <p className="truncate text-lg font-extrabold tracking-tight text-slate-900">
                   SMLNEXGEN
                 </p>
-                <p className="text-xs font-medium text-slate-500">
+                <p className="hidden text-xs font-medium text-slate-500 sm:block">
                   Microfinance Management System
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-slate-800">
+                <p className="text-sm font-bold text-slate-800">
                   Group Lending
                 </p>
-                <p className="text-xs text-slate-500">Loan administration</p>
+                <p className="text-xs text-slate-500">
+                  Loan administration
+                </p>
               </div>
+
               <button
                 type="button"
                 onClick={loadData}
                 disabled={loading}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
               >
-                {loading ? "Refreshing..." : "↻ Refresh"}
+                <span className="text-lg">↻</span>
+                <span className="hidden sm:inline">
+                  {loading ? "Refreshing..." : "Refresh"}
+                </span>
               </button>
             </div>
           </div>
 
+          {/* Navigation */}
           <nav
             aria-label="Group loan navigation"
-            className="mt-4 flex gap-1 overflow-x-auto border-t border-slate-100 pt-3"
+            className="-mb-px flex gap-1 overflow-x-auto border-t border-slate-100 pt-2"
           >
             {navigation.map((item) => {
               const selected = active === item.id;
@@ -416,16 +564,27 @@ export default function GroupLoanManagement() {
                   type="button"
                   onClick={() => changePage(item.id)}
                   aria-current={selected ? "page" : undefined}
-                  className={`relative flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-semibold transition ${
+                  className={`relative flex shrink-0 items-center gap-2 rounded-t-xl px-3 py-3 text-xs font-bold transition sm:px-4 sm:text-sm ${
                     selected
                       ? "bg-blue-50 text-blue-800"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
-                  <span aria-hidden="true">{item.icon}</span>
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-6 w-6 items-center justify-center rounded-lg text-sm ${
+                      selected
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+
                   {item.label}
+
                   {selected && (
-                    <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-blue-700" />
+                    <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-blue-700" />
                   )}
                 </button>
               );
@@ -434,32 +593,40 @@ export default function GroupLoanManagement() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      {/* Main Content */}
+      <main className="mx-auto w-full max-w-[1800px] px-3 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+        {/* Page Heading */}
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-blue-700">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
               Lending Management
             </div>
+
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
               {heading}
             </h1>
+
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
               {description}
             </p>
           </div>
 
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+          <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             Group Lending
-          </span>
+          </div>
         </div>
 
+        {/* Page Content */}
         {renderContent()}
 
+        {/* Footer */}
         <footer className="mt-10 flex flex-col gap-2 border-t border-slate-200 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} SMLNEXGEN. Microfinance Management.
+            © {new Date().getFullYear()}{" "}
+            <span className="font-bold text-slate-700">SMLNEXGEN</span>.
+            Microfinance Management.
           </p>
           <p>Group Loan Administration</p>
         </footer>
