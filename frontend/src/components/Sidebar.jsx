@@ -17,45 +17,50 @@ const Sidebar = () => {
     {
       name: "Dashboard",
       path: "/dashboard",
-      icon: "📊",
       roles: ["SUPER_ADMIN", "RD_FD_ADMIN", "GROUP_LOAN_ADMIN"],
     },
     {
       name: "Recurring Deposit",
       path: "/rd",
-      icon: "📅",
       roles: ["SUPER_ADMIN", "RD_FD_ADMIN"],
     },
     {
       name: "Fixed Deposit",
       path: "/fd",
-      icon: "🏦",
       roles: ["SUPER_ADMIN", "RD_FD_ADMIN"],
     },
     {
       name: "Group Loans",
       path: "/group-loans",
-      icon: "🤝",
+      roles: ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"],
+    },
+    {
+      name: "Customer Management",
+      path: "/customers",
       roles: ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"],
     },
     {
       name: "Reports",
       path: "/reports",
-      icon: "📈",
       roles: ["SUPER_ADMIN"],
     },
     {
       name: "User Management",
       path: "/users",
-      icon: "👥",
       roles: ["SUPER_ADMIN"],
     },
+    {
+      name: "Approved Loans",
+      path: "/approved-loans",
+      roles: ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"],
+    }
   ];
+
 
   const filteredMenu = menuItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col border-r border-slate-700">
+    <aside className="w-64 min-h-screen bg-slate-800 text-white flex flex-col border-r border-slate-700">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-700">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center font-bold text-lg">

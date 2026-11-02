@@ -1,0 +1,80 @@
+from django.urls import path
+
+from .views import (
+    GroupLoanPlanListCreateView,
+    GroupLoanPlanDetailView,
+    LoanGroupListCreateView,
+    LoanGroupDetailView,
+    GroupMembersView,
+    GroupLoanInstallmentListView,
+    GroupCollectionView,
+)
+from .views import (
+    GroupLoanApplicationListCreateView,
+    GroupLoanDecisionView,
+    GroupLoanScheduleView,
+    GroupLoanDisbursementView,
+    GroupLoanPaymentView,
+)
+urlpatterns = [
+    path(
+        "group-loan/plans/",
+        GroupLoanPlanListCreateView.as_view(),
+        name="group-loan-plans",
+    ),
+    path(
+        "group-loan/plans/<int:pk>/",
+        GroupLoanPlanDetailView.as_view(),
+        name="group-loan-plan-detail",
+    ),
+    path(
+        "group-loan/groups/",
+        LoanGroupListCreateView.as_view(),
+        name="loan-groups",
+    ),
+    path(
+        "group-loan/groups/<int:pk>/",
+        LoanGroupDetailView.as_view(),
+        name="loan-group-detail",
+    ),
+    path(
+        "group-loan/groups/<int:group_id>/members/",
+        GroupMembersView.as_view(),
+        name="loan-group-members",
+    ),
+    path(
+    "group-loan/applications/",
+    GroupLoanApplicationListCreateView.as_view(),
+    name="group-loan-applications",
+),
+path(
+    "group-loan/applications/<int:application_id>/decision/",
+    GroupLoanDecisionView.as_view(),
+    name="group-loan-decision",
+),
+path(
+    "group-loan/applications/<int:application_id>/generate-schedule/",
+    GroupLoanScheduleView.as_view(),
+    name="group-loan-generate-schedule",
+),
+path(
+    "group-loan/applications/<int:application_id>/disburse/",
+    GroupLoanDisbursementView.as_view(),
+    name="group-loan-disburse",
+),
+path(
+    "group-loan/installments/<int:installment_id>/payments/",
+    GroupLoanPaymentView.as_view(),
+    name="group-loan-payment",
+),
+path(
+    "group-loan/applications/<int:application_id>/installments/",
+    GroupLoanInstallmentListView.as_view(),
+    name="group-loan-installments",
+),
+path(
+    "group-loan/applications/<int:application_id>/collections/",
+    GroupCollectionView.as_view(),
+    name="group-loan-collections",
+),
+]
