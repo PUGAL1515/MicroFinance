@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-
+from customer.models import Customer
 
 class FDProduct(models.Model):
     INTEREST_SIMPLE = "SIMPLE"
@@ -106,16 +106,19 @@ class FDAccount(models.Model):
     ]
 
     product = models.ForeignKey(FDProduct, on_delete=models.PROTECT, related_name="accounts")
+    customer = models.ForeignKey(
+    "customer.Customer",
+    on_delete=models.CASCADE,
+    related_name="fd_accounts",
+    null=True,
+    blank=True,
+)
+
     account_number = models.CharField(max_length=30, unique=True)
-    
-    # Customer details (you can later link to Customer model)
-    customer_name = models.CharField(max_length=150)
-    customer_phone = models.CharField(max_length=15, blank=True)
-    customer_id_proof = models.CharField(max_length=50, blank=True)
 
     deposit_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    tenure_value = models.PositiveIntegerField()  # based on product.tenure_unit
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2)  # locked at opening
+    tenure_value = models.PositiveIntegerField()
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2)
     start_date = models.DateField()
     maturity_date = models.DateField()
     maturity_amount = models.DecimalField(max_digits=14, decimal_places=2)
@@ -123,11 +126,9 @@ class FDAccount(models.Model):
     maturity_instruction = models.CharField(max_length=30, choices=FDProduct.MATURITY_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
 
-    # Nominee
     nominee_name = models.CharField(max_length=150, blank=True)
     nominee_relation = models.CharField(max_length=50, blank=True)
 
-    # Approval
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="fd_created")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="fd_approved")
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -139,8 +140,7 @@ class FDAccount(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.account_number} - {self.customer_name}"
-
+        return f"{self.account_number} - {self.customer.get_full_name()}"
 
 class FDTransaction(models.Model):
     TRANSACTION_TYPES = [
