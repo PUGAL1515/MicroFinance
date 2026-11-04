@@ -1,4 +1,3 @@
-from email.mime import application
 from django.db.models import Count, Q, Sum
 from django.db import transaction
 from django.shortcuts import get_object_or_404, render
@@ -711,6 +710,32 @@ class GroupLoanDisbursementView(APIView):
                 application
             ).data,
         }, status=status.HTTP_200_OK)
+@transaction.atomic
+def close_loan_if_fully_paid(application):
+    installments = list(
+        GroupLoanInstallment.objects.filter(
+            application=application
+        )
+    )
+
+    if not installments:
+        return False
+
+    all_paid = all(
+        Decimal(str(item.paid_amount or 0))
+        >= Decimal(str(item.total_due or 0))
+        for item in installments
+    )
+
+    if all_paid:
+        if application.status != "closed":
+            application.status = "closed"
+            application.save(update_fields=["status"])
+        return True
+
+    return False
+
+
 
 class GroupLoanPaymentView(APIView):
     permission_classes = [AllowAny]
@@ -724,7 +749,9 @@ class GroupLoanPaymentView(APIView):
             pk=installment_id,
         )
 
-        if installment.application.status != "disbursed":
+        application = installment.application
+
+        if application.status != "disbursed":
             raise ValidationError(
                 "Payments can be collected only after disbursement."
             )
@@ -737,7 +764,7 @@ class GroupLoanPaymentView(APIView):
         if amount <= 0:
             raise ValidationError("Payment must be greater than zero.")
 
-        balance = installment.balance_due
+        balance = money(installment.balance_due)
 
         if amount > balance:
             raise ValidationError(
@@ -753,10 +780,13 @@ class GroupLoanPaymentView(APIView):
             "reference": request.data.get("reference", ""),
             "notes": request.data.get("notes", ""),
         })
-        serializer.is_valid(raise_exception=True)
 
+        serializer.is_valid(raise_exception=True)
         serializer.save()
-        installment.paid_amount = money(installment.paid_amount + amount)
+
+        installment.paid_amount = money(
+            installment.paid_amount + amount
+        )
 
         if installment.paid_amount >= installment.total_due:
             installment.status = "paid"
@@ -765,11 +795,24 @@ class GroupLoanPaymentView(APIView):
 
         installment.save(update_fields=["paid_amount", "status"])
 
+        # Check all 12 EMIs after updating the current EMI.
+        loan_closed = close_loan_if_fully_paid(application)
+
+        application.refresh_from_db()
+        installment.refresh_from_db()
+
         return Response({
+            "detail": (
+                "Payment saved and loan closed successfully."
+                if loan_closed
+                else "Payment saved successfully."
+            ),
             "payment": serializer.data,
             "installment": GroupLoanInstallmentSerializer(
                 installment
             ).data,
+            "loan_status": application.status,
+            "loan_closed": loan_closed,
         }, status=status.HTTP_201_CREATED)
 
 class GroupLoanInstallmentListView(APIView):
@@ -812,6 +855,7 @@ class GroupLoanInstallmentListView(APIView):
             "installments": data,
         })
 
+
 class GroupCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -846,11 +890,13 @@ class GroupCollectionView(APIView):
         return Response({
             "application_id": application.id,
             "group_name": application.group.name,
-            "member_installments":
+            "loan_status": application.status,
+            "member_installments": (
                 GroupLoanMemberInstallmentSerializer(
                     member_installments,
                     many=True,
-                ).data,
+                ).data
+            ),
             "collections": GroupCollectionSerializer(
                 collections,
                 many=True,
@@ -859,8 +905,12 @@ class GroupCollectionView(APIView):
 
     @transaction.atomic
     def post(self, request, application_id):
+
+        # 1. Lock application
         application = get_object_or_404(
-            GroupLoanApplication.objects.select_for_update(),
+            GroupLoanApplication.objects
+            .select_for_update()
+            .select_related("group"),
             pk=application_id,
         )
 
@@ -869,6 +919,7 @@ class GroupCollectionView(APIView):
                 "Collection is allowed only after loan disbursement."
             )
 
+        # 2. Validate allocations
         allocations_data = request.data.get("allocations")
 
         if not isinstance(allocations_data, list) or not allocations_data:
@@ -882,9 +933,13 @@ class GroupCollectionView(APIView):
             raise ValidationError("Enter a valid collection amount.")
 
         if total_amount <= 0:
-            raise ValidationError("Collection amount must be greater than zero.")
+            raise ValidationError(
+                "Collection amount must be greater than zero."
+            )
 
+        # 3. Validate payment method
         payment_method = request.data.get("payment_method", "cash")
+
         allowed_methods = ["cash", "upi", "bank", "other"]
 
         if payment_method not in allowed_methods:
@@ -892,8 +947,12 @@ class GroupCollectionView(APIView):
                 "payment_method": "Choose cash, upi, bank or other."
             })
 
+        # 4. Validate payment date
         payment_date = parse_date(
-            request.data.get("payment_date", date.today().isoformat())
+            request.data.get(
+                "payment_date",
+                date.today().isoformat(),
+            )
         )
 
         if not payment_date:
@@ -901,12 +960,13 @@ class GroupCollectionView(APIView):
                 "payment_date": "Use YYYY-MM-DD format."
             })
 
-        # Validate every member allocation before saving.
+        # 5. Validate every member allocation before saving
         parsed_allocations = []
         allocation_total = Decimal("0.00")
         seen_ids = set()
 
         for item in allocations_data:
+
             member_installment_id = item.get("member_installment")
 
             if not member_installment_id:
@@ -936,12 +996,15 @@ class GroupCollectionView(APIView):
             member_emi = get_object_or_404(
                 GroupLoanMemberInstallment.objects
                 .select_for_update()
-                .select_related("installment"),
+                .select_related(
+                    "installment",
+                    "membership__customer",
+                ),
                 pk=member_installment_id,
                 installment__application=application,
             )
 
-            balance = member_emi.balance_due
+            balance = money(member_emi.balance_due)
 
             if amount > balance:
                 raise ValidationError({
@@ -965,7 +1028,7 @@ class GroupCollectionView(APIView):
                 )
             })
 
-        # Create one group-level receipt.
+        # 6. Create one group collection receipt
         collection = GroupCollection.objects.create(
             application=application,
             amount=total_amount,
@@ -973,13 +1036,18 @@ class GroupCollectionView(APIView):
             payment_date=payment_date,
             reference=request.data.get("reference", ""),
             notes=request.data.get("notes", ""),
-            created_by=request.user if request.user.is_authenticated else None,
+            created_by=(
+                request.user
+                if request.user.is_authenticated
+                else None
+            ),
         )
 
+        # 7. Save individual member allocations
         affected_installment_ids = set()
 
-        # Save individual member allocations.
         for member_emi, amount in parsed_allocations:
+
             GroupCollectionAllocation.objects.create(
                 collection=collection,
                 member_installment=member_emi,
@@ -996,48 +1064,86 @@ class GroupCollectionView(APIView):
                 member_emi.status = "partial"
 
             member_emi.save(
-                update_fields=["paid_amount", "status"]
+                update_fields=[
+                    "paid_amount",
+                    "status",
+                ]
             )
 
-            affected_installment_ids.add(member_emi.installment_id)
+            affected_installment_ids.add(
+                member_emi.installment_id
+            )
 
-        # Update group-level EMI totals from member allocations.
+        # 8. Update group-level EMI totals
         for installment_id in affected_installment_ids:
+
             group_installment = (
                 GroupLoanInstallment.objects
                 .select_for_update()
-                .get(pk=installment_id)
+                .get(
+                    pk=installment_id,
+                    application=application,
+                )
             )
 
             member_paid_total = (
                 GroupLoanMemberInstallment.objects
                 .filter(installment=group_installment)
-                .aggregate(total=Sum("paid_amount"))["total"]
+                .aggregate(
+                    total=Sum("paid_amount")
+                )["total"]
                 or Decimal("0.00")
             )
 
-            group_installment.paid_amount = money(member_paid_total)
+            group_installment.paid_amount = money(
+                member_paid_total
+            )
 
-            if group_installment.paid_amount >= group_installment.total_due:
+            if (
+                group_installment.paid_amount
+                >= group_installment.total_due
+            ):
                 group_installment.status = "paid"
+
             elif group_installment.paid_amount > 0:
                 group_installment.status = "partial"
+
             elif group_installment.due_date < date.today():
                 group_installment.status = "overdue"
+
             else:
                 group_installment.status = "pending"
 
             group_installment.save(
-                update_fields=["paid_amount", "status"]
+                update_fields=[
+                    "paid_amount",
+                    "status",
+                ]
             )
 
+        # 9. IMPORTANT: Check loan closure AFTER updating all EMIs
+        loan_closed = close_loan_if_fully_paid(application)
+
+        application.refresh_from_db()
+
+        # 10. Fetch updated receipt
         collection = (
             GroupCollection.objects
-            .prefetch_related("allocations__member_installment__membership__customer")
+            .prefetch_related(
+                "allocations__member_installment__membership__customer"
+            )
             .get(pk=collection.pk)
         )
 
         return Response({
-            "detail": "Group collection saved successfully.",
-            "receipt": GroupCollectionSerializer(collection).data,
+            "detail": (
+                "All EMIs completed. Group loan closed successfully."
+                if loan_closed
+                else "Group collection saved successfully."
+            ),
+            "receipt": GroupCollectionSerializer(
+                collection
+            ).data,
+            "loan_status": application.status,
+            "loan_closed": loan_closed,
         }, status=status.HTTP_201_CREATED)
