@@ -1,147 +1,114 @@
-import { useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const summaryCards = [
-  {
-    title: "Today's Due",
-    value: "₹1,28,450",
-    subtitle: "18 customers",
-    icon: "▦",
-    color: "blue",
-    trend: "↘",
-  },
-  {
-    title: "Collected Today",
-    value: "₹98,750",
-    subtitle: "76.9% of target",
-    icon: "₹",
-    color: "green",
-    trend: "↗",
-  },
-  {
-    title: "Overdue Amount",
-    value: "₹72,300",
-    subtitle: "12 customers",
-    icon: "!",
-    color: "orange",
-    trend: "↘",
-  },
-  {
-    title: "Pending Approvals",
-    value: "02",
-    subtitle: "Requests to review",
-    icon: "◷",
-    color: "purple",
-    trend: "",
-  },
-  {
-    title: "Disbursed Today",
-    value: "₹2,50,000",
-    subtitle: "5 loans",
-    icon: "♧",
-    color: "cyan",
-    trend: "↗",
-  },
-];
+// --------------------------------------------------
+// API CONFIGURATION
+// --------------------------------------------------
 
-const quickActions = [
-  {
-    title: "Add Customer",
-    description: "Register a new customer",
-    icon: "♙",
-    color: "blue",
-    href: "/customers",
-  },
-  {
-    title: "New Loan",
-    description: "Create a loan application",
-    icon: "₹",
-    color: "green",
-    href: "/loans",
-  },
-  {
-    title: "Record Collection",
-    description: "Enter a repayment",
-    icon: "▣",
-    color: "purple",
-    href: "/collections",
-  },
-  {
-    title: "FD & RD Account",
-    description: "Manage deposit accounts",
-    icon: "▤",
-    color: "orange",
-    href: "/fd-rd",
-  },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
-const pendingItems = [
-  {
-    title: "Loan applications",
-    description: "Applications waiting for review",
-    count: "02",
-    color: "bg-purple-50 text-purple-700",
-  },
-  {
-    title: "Collection verification",
-    description: "Collections pending confirmation",
-    count: "05",
-    color: "bg-orange-50 text-orange-700",
-  },
-  {
-    title: "Customer KYC",
-    description: "Customer documents to verify",
-    count: "03",
-    color: "bg-blue-50 text-blue-700",
-  },
-];
+const getToken = () =>
+  localStorage.getItem("access") ||
+  localStorage.getItem("access_token") ||
+  localStorage.getItem("token") ||
+  localStorage.getItem("authToken");
 
-const recentActivities = [
-  {
-    title: "Daily collection",
-    description: "Collection entry recorded",
-    amount: "₹5,000",
-    icon: "₹",
-    color: "bg-emerald-50 text-emerald-700",
-  },
-  {
-    title: "New customer",
-    description: "Customer registration activity",
-    amount: "Customer",
-    icon: "♙",
-    color: "bg-blue-50 text-blue-700",
-  },
-  {
-    title: "Loan application",
-    description: "Loan application submitted",
-    amount: "Review",
-    icon: "▤",
-    color: "bg-violet-50 text-violet-700",
-  },
-];
+async function apiRequest(endpoint) {
+  const token = getToken();
 
-const rolePermissions = {
-  SUPER_ADMIN: {
-    label: "Super Administrator",
-    description:
-      "Manage customers, loans, collections, deposits, finance and user access.",
-  },
-  RD_FD_ADMIN: {
-    label: "RD & FD Administrator",
-    description:
-      "Manage recurring deposits, fixed deposits and related customer accounts.",
-  },
-  GROUP_LOAN_ADMIN: {
-    label: "Group Loan Administrator",
-    description:
-      "Manage group loan operations, repayment tracking and collections.",
-  },
-  BRANCH_MANAGER: {
-    label: "Branch Manager",
-    description:
-      "Monitor branch operations, customer accounts, loan activity and collections.",
-  },
-};
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`${endpoint} - ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// --------------------------------------------------
+// HELPERS
+// --------------------------------------------------
+
+function getList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.payments)) return data.payments;
+  if (Array.isArray(data?.applications)) return data.applications;
+  return [];
+}
+
+function getAmount(value) {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatINR(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(getAmount(value));
+}
+
+function isToday(value) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  const today = new Date();
+
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
+
+function formatDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getCustomerName(item) {
+  return (
+    item.customer_name ||
+    item.customer?.full_name ||
+    [
+      item.customer?.first_name,
+      item.customer?.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ") ||
+    item.group_name ||
+    "Customer"
+  );
+}
+
+function getStatus(item) {
+  return String(item.status || "").toLowerCase();
+}
+
+// --------------------------------------------------
+// COLOR STYLES
+// --------------------------------------------------
 
 const colorStyles = {
   blue: {
@@ -175,22 +142,33 @@ function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
+
   return "Good evening";
 }
 
-function SummaryCard({ card }) {
+// --------------------------------------------------
+// SUMMARY CARD
+// --------------------------------------------------
+
+function SummaryCard({ card, loading }) {
   const theme = colorStyles[card.color];
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5 sm:p-5">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5">
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">
             {card.title}
           </p>
-          <p className="mt-2 break-words text-xl font-extrabold tracking-tight text-[#17365D] sm:mt-3 sm:text-2xl">
-            {card.value}
-          </p>
+
+          {loading ? (
+            <div className="mt-4 h-8 w-32 animate-pulse rounded-lg bg-slate-100" />
+          ) : (
+            <p className="mt-4 break-words text-2xl font-extrabold tracking-tight text-[#17365D] sm:text-[27px]">
+              {card.value}
+            </p>
+          )}
         </div>
 
         <div
@@ -200,28 +178,20 @@ function SummaryCard({ card }) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 sm:mt-4">
-        <p className="truncate text-xs font-medium text-slate-400">
-          {card.subtitle}
+      <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+        <p className="text-xs font-medium text-slate-400">
+          {loading ? "Loading..." : card.subtitle}
         </p>
-
-        {card.trend && (
-          <span
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold sm:h-7 sm:w-7 sm:text-sm ${
-              card.color === "orange"
-                ? "bg-orange-50 text-orange-600"
-                : "bg-emerald-50 text-emerald-600"
-            }`}
-          >
-            {card.trend}
-          </span>
-        )}
       </div>
 
       <div className="absolute -bottom-8 -right-8 h-20 w-20 rounded-full bg-blue-50/60 opacity-0 blur-2xl transition-opacity group-hover:opacity-100" />
     </div>
   );
 }
+
+// --------------------------------------------------
+// SECTION HEADING
+// --------------------------------------------------
 
 function SectionHeading({ title, description, action }) {
   return (
@@ -230,17 +200,46 @@ function SectionHeading({ title, description, action }) {
         <h2 className="text-base font-extrabold tracking-tight text-[#17365D] sm:text-lg">
           {title}
         </h2>
-        <p className="mt-0.5 text-xs leading-5 text-slate-400 sm:mt-1 sm:text-sm">
+
+        <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">
           {description}
         </p>
       </div>
+
       {action}
     </div>
   );
 }
 
+// --------------------------------------------------
+// MAIN DASHBOARD
+// --------------------------------------------------
+
 function Dashboard() {
   const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  const [dashboardData, setDashboardData] = useState({
+    todayDue: 0,
+    collectedToday: 0,
+    overdueAmount: 0,
+    pendingApprovals: 0,
+    disbursedToday: 0,
+    dueCustomers: 0,
+    overdueCustomers: 0,
+    collectionCount: 0,
+    disbursedCount: 0,
+    payments: [],
+    applications: [],
+    customerLoans: [],
+  });
+
+  // ------------------------------------------------
+  // USER INFORMATION
+  // ------------------------------------------------
 
   const role = user?.profile?.role || user?.role || "USER";
 
@@ -250,31 +249,382 @@ function Dashboard() {
     user?.username ||
     "User";
 
+  const rolePermissions = {
+    SUPER_ADMIN: {
+      label: "Super Administrator",
+      description:
+        "Manage customers, loans, collections, deposits, finance and user access.",
+    },
+
+    RD_FD_ADMIN: {
+      label: "RD & FD Administrator",
+      description:
+        "Manage recurring deposits, fixed deposits and related customer accounts.",
+    },
+
+    GROUP_LOAN_ADMIN: {
+      label: "Group Loan Administrator",
+      description:
+        "Manage group loan operations, repayment tracking and collections.",
+    },
+
+    BRANCH_MANAGER: {
+      label: "Branch Manager",
+      description:
+        "Monitor branch operations, customer accounts, loan activity and collections.",
+    },
+  };
+
   const roleInfo = rolePermissions[role] || {
     label: String(role)
       .replaceAll("_", " ")
       .toLowerCase()
       .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+
     description:
       "Your dashboard provides an overview of the features available to your account.",
   };
 
   const initials = String(firstName).trim().slice(0, 2).toUpperCase();
 
+  // ------------------------------------------------
+  // LOAD DASHBOARD DATA
+  // ------------------------------------------------
+
+  const loadDashboard = useCallback(async (showRefresh = false) => {
+    if (showRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
+    setError("");
+
+    const endpoints = [
+      apiRequest("/api/collections/dashboard/"),
+      apiRequest("/api/collections/today-dues/"),
+      apiRequest("/api/collections/overdue/"),
+      apiRequest("/api/collections/payments/"),
+      apiRequest("/api/group-loan/applications/"),
+    ];
+
+    const results = await Promise.allSettled(endpoints);
+
+    const [
+      collectionDashboard,
+      todayDues,
+      overdue,
+      payments,
+      applications,
+    ] = results.map((result) =>
+      result.status === "fulfilled" ? result.value : null
+    );
+
+    const hasAnyData = results.some(
+      (result) => result.status === "fulfilled"
+    );
+
+    if (!hasAnyData) {
+      setError(
+        "Unable to load dashboard data. Please check your backend server and API endpoints."
+      );
+    }
+
+    const dueList = getList(todayDues);
+    const overdueList = getList(overdue);
+    const paymentList = getList(payments);
+    const applicationList = getList(applications);
+
+    // Today's collections
+    const todayPayments = paymentList.filter((payment) =>
+      isToday(
+        payment.payment_date ||
+          payment.created_at ||
+          payment.date
+      )
+    );
+
+    const collectedToday = collectionDashboard
+      ? getAmount(collectionDashboard.today_collected_amount)
+      : todayPayments.reduce(
+          (sum, payment) =>
+            sum + getAmount(payment.amount || payment.total_amount),
+          0
+        );
+
+    // Today's due
+    const todayDue = collectionDashboard
+      ? getAmount(collectionDashboard.today_due_amount)
+      : dueList.reduce(
+          (sum, item) =>
+            sum +
+            getAmount(item.balance_due ?? item.total_due),
+          0
+        );
+
+    // Overdue amount
+    const overdueAmount = collectionDashboard
+      ? getAmount(collectionDashboard.overdue_amount)
+      : overdueList.reduce(
+          (sum, item) =>
+            sum +
+            getAmount(item.balance_due ?? item.total_due),
+          0
+        );
+
+    // Pending loan applications
+    const pendingApplications = applicationList.filter((item) =>
+      [
+        "submitted",
+        "pending",
+        "pending_approval",
+        "under_review",
+      ].includes(getStatus(item))
+    );
+
+    // Disbursed today
+    const disbursedApplications = applicationList.filter(
+      (item) =>
+        getStatus(item) === "disbursed" &&
+        isToday(
+          item.disbursed_at ||
+            item.disbursement_date
+        )
+    );
+
+    const disbursedToday = disbursedApplications.reduce(
+      (sum, item) =>
+        sum +
+        getAmount(
+          item.approved_total ||
+            item.approved_amount ||
+            item.disbursed_amount
+        ),
+      0
+    );
+
+    setDashboardData({
+      todayDue,
+      collectedToday,
+      overdueAmount,
+
+      pendingApprovals: pendingApplications.length,
+
+      disbursedToday,
+
+      dueCustomers:
+        collectionDashboard?.today_due_count ??
+        dueList.length,
+
+      overdueCustomers:
+        collectionDashboard?.overdue_count ??
+        overdueList.length,
+
+      collectionCount:
+        collectionDashboard?.today_collection_count ??
+        todayPayments.length,
+
+      disbursedCount: disbursedApplications.length,
+
+      payments: paymentList,
+      applications: applicationList,
+      customerLoans: [],
+    });
+
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // ------------------------------------------------
+  // SUMMARY CARDS
+  // ------------------------------------------------
+
+  const summaryCards = [
+    {
+      title: "Today's Due",
+      value: formatINR(dashboardData.todayDue),
+      subtitle: `${dashboardData.dueCustomers} customers`,
+      icon: "▦",
+      color: "blue",
+    },
+    {
+      title: "Collected Today",
+      value: formatINR(dashboardData.collectedToday),
+      subtitle: `${dashboardData.collectionCount} collections`,
+      icon: "₹",
+      color: "green",
+    },
+    {
+      title: "Overdue Amount",
+      value: formatINR(dashboardData.overdueAmount),
+      subtitle: `${dashboardData.overdueCustomers} customers`,
+      icon: "!",
+      color: "orange",
+    },
+    {
+      title: "Pending Approvals",
+      value: String(dashboardData.pendingApprovals).padStart(2, "0"),
+      subtitle: "Applications to review",
+      icon: "◷",
+      color: "purple",
+    },
+    {
+      title: "Disbursed Today",
+      value: formatINR(dashboardData.disbursedToday),
+      subtitle: `${dashboardData.disbursedCount} loans`,
+      icon: "♧",
+      color: "cyan",
+    },
+  ];
+
+  // ------------------------------------------------
+  // QUICK ACTIONS
+  // ------------------------------------------------
+
+  const quickActions = [
+    {
+      title: "Add Customer",
+      description: "Register a new customer",
+      icon: "♙",
+      color: "blue",
+      href: "/customers",
+    },
+    {
+      title: "Group Loans",
+      description: "Manage loan applications",
+      icon: "₹",
+      color: "green",
+      href: "/group-loans",
+    },
+    {
+      title: "Record Collection",
+      description: "Enter a repayment",
+      icon: "▣",
+      color: "purple",
+      href: "/collections",
+    },
+    {
+      title: "FD & RD Account",
+      description: "Manage deposit accounts",
+      icon: "▤",
+      color: "orange",
+      href: "/fd",
+    },
+  ];
+
+  // ------------------------------------------------
+  // PENDING ITEMS
+  // ------------------------------------------------
+
+  const pendingItems = [
+    {
+      title: "Loan applications",
+      description: "Applications waiting for review",
+      count: dashboardData.pendingApprovals,
+      color: "bg-purple-50 text-purple-700",
+      href: "/group-loans",
+    },
+    {
+      title: "Collection records",
+      description: "Collections recorded today",
+      count: dashboardData.collectionCount,
+      color: "bg-orange-50 text-orange-700",
+      href: "/collections",
+    },
+    {
+      title: "Customer KYC",
+      description: "Customer documents to verify",
+      count: "View",
+      color: "bg-blue-50 text-blue-700",
+      href: "/kyc-verification",
+    },
+  ];
+
+  // ------------------------------------------------
+  // RECENT ACTIVITIES
+  // ------------------------------------------------
+
+  const recentActivities = [
+    ...dashboardData.payments.map((payment) => ({
+      title: "Loan collection",
+
+      description: `${getCustomerName(payment)} · ${
+        payment.payment_method || "Payment"
+      }`,
+
+      amount: formatINR(
+        payment.amount || payment.total_amount
+      ),
+
+      icon: "₹",
+
+      color: "bg-emerald-50 text-emerald-700",
+
+      date:
+        payment.payment_date ||
+        payment.created_at,
+    })),
+
+    ...dashboardData.applications.map((application) => ({
+      title: "Loan application",
+
+      description: `${
+        application.group_name ||
+        application.customer_name ||
+        "Group loan"
+      } · ${application.status || "Submitted"}`,
+
+      amount: application.approved_total
+        ? formatINR(application.approved_total)
+        : "Application",
+
+      icon: "▤",
+
+      color: "bg-violet-50 text-violet-700",
+
+      date:
+        application.submitted_at ||
+        application.created_at,
+    })),
+  ]
+    .sort(
+      (a, b) =>
+        new Date(b.date || 0).getTime() -
+        new Date(a.date || 0).getTime()
+    )
+    .slice(0, 5);
+
+  // ------------------------------------------------
+  // NAVIGATION
+  // ------------------------------------------------
+
   function navigateTo(path) {
     window.location.href = path;
   }
 
+  // ------------------------------------------------
+  // EXPORT CSV
+  // ------------------------------------------------
+
   function exportReport() {
     const rows = [
       ["Metric", "Value"],
-      ...summaryCards.map((card) => [card.title, card.value]),
+      ...summaryCards.map((card) => [
+        card.title,
+        card.value,
+      ]),
     ];
 
     const csv = rows
       .map((row) =>
         row
-          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .map((value) =>
+            `"${String(value).replaceAll('"', '""')}"`
+          )
           .join(",")
       )
       .join("\r\n");
@@ -285,115 +635,87 @@ function Dashboard() {
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+
     link.href = url;
     link.download = "smlnexgen-dashboard-summary.csv";
     link.click();
+
     URL.revokeObjectURL(url);
   }
 
+  // ------------------------------------------------
+  // UI
+  // ------------------------------------------------
+
   return (
     <div className="min-h-screen bg-[#F4F7FC] text-slate-800">
-      {/* ===================== HEADER ===================== */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
-        
-        {/* ===== MOBILE + TABLET : ONLY SEARCH BAR ===== */}
-        <div className="block px-3 py-3 lg:hidden">
-          <label className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition focus-within:border-blue-300 focus-within:bg-white">
-            <span className="text-lg text-slate-400">⌕</span>
-            <input
-              type="search"
-              placeholder="Search customers, loans..."
-              aria-label="Search customers and loans"
-              className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && event.currentTarget.value.trim()) {
-                  navigateTo(
-                    `/customers?search=${encodeURIComponent(
-                      event.currentTarget.value.trim()
-                    )}`
-                  );
-                }
-              }}
-            />
-          </label>
-        </div>
 
-        {/* ===== DESKTOP : FULL HEADER ===== */}
-        <div className="mx-auto hidden max-w-[1800px] items-center justify-between gap-3 px-5 py-3 lg:flex lg:px-8">
-          {/* Logo */}
+      {/* HEADER */}
+
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md shadow-blue-900/15">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
               S
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold tracking-wide text-[#17365D]">
                 SMLNEXGEN
               </p>
+
               <p className="mt-0.5 text-[11px] font-medium text-slate-400">
                 Microfinance workspace
               </p>
             </div>
           </div>
 
-          {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Search */}
-            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 transition focus-within:border-blue-300 focus-within:bg-white lg:w-64 xl:w-80">
-              <span className="text-lg text-slate-400">⌕</span>
-              <input
-                type="search"
-                placeholder="Search customers, loans..."
-                aria-label="Search customers and loans"
-                className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && event.currentTarget.value.trim()) {
-                    navigateTo(
-                      `/customers?search=${encodeURIComponent(
-                        event.currentTarget.value.trim()
-                      )}`
-                    );
-                  }
-                }}
-              />
-            </label>
 
             {/* Notification */}
             <button
               type="button"
               aria-label="Notifications"
               onClick={() => navigateTo("/notifications")}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
             >
               ♧
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
+
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
             </button>
 
             <div className="h-8 border-l border-slate-200" />
 
-            {/* User */}
-            <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
                 {initials}
               </div>
-              <div className="min-w-0">
-                <p className="max-w-[140px] truncate text-sm font-bold text-slate-800 xl:max-w-[180px]">
+
+              <div className="hidden sm:block">
+                <p className="max-w-36 truncate text-sm font-bold text-slate-800">
                   {firstName}
                 </p>
-                <p className="max-w-[160px] truncate text-xs text-slate-400 xl:max-w-[200px]">
+
+                <p className="max-w-40 truncate text-xs text-slate-400">
                   {roleInfo.label}
                 </p>
               </div>
             </div>
+
           </div>
         </div>
       </header>
 
-      {/* ===================== MAIN CONTENT ===================== */}
-      <main className="mx-auto max-w-[1800px] space-y-5 p-3 pb-8 sm:space-y-6 sm:p-5 lg:space-y-7 lg:p-8">
-        {/* Page heading + actions */}
-        <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7890B1] sm:text-[11px] sm:tracking-[0.16em]">
+      {/* MAIN CONTENT */}
+
+      <main className="mx-auto max-w-[1800px] space-y-6 p-4 sm:p-6 lg:space-y-7 lg:p-8">
+
+        {/* PAGE TITLE */}
+
+        <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#7890B1]">
               {new Date().toLocaleDateString("en-IN", {
                 weekday: "long",
                 month: "long",
@@ -409,11 +731,12 @@ function Dashboard() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-2.5">
+          <div className="flex flex-wrap gap-2.5">
+
             <button
               type="button"
               onClick={exportReport}
-              className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:flex-none sm:px-4 sm:py-3"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
               <span className="text-base sm:text-lg">⇩</span>
               <span>Export</span>
@@ -421,21 +744,39 @@ function Dashboard() {
 
             <button
               type="button"
-              onClick={() => navigateTo("/loans")}
-              className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-3.5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:flex-none sm:px-4 sm:py-3"
+              onClick={() => navigateTo("/group-loans")}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800"
             >
-              <span className="text-lg leading-none sm:text-xl">+</span>
-              <span>New application</span>
+              <span className="text-xl">+</span>
+              New application
             </button>
+
+            <button
+              type="button"
+              onClick={() => loadDashboard(true)}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+            >
+              <span className={refreshing ? "animate-spin" : ""}>
+                ↻
+              </span>
+
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+
           </div>
         </section>
 
-        {/* Welcome banner */}
-        <section className="relative isolate overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-4 py-6 shadow-sm sm:px-6 sm:py-8 lg:px-8 lg:py-9">
+        {/* WELCOME BANNER */}
+
+        <section className="relative isolate overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-5 py-7 shadow-sm sm:px-8 sm:py-9">
+
           <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-2.5 py-1 sm:px-3 sm:py-1.5">
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-3 py-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-100" />
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#3972B8] sm:text-[10px]">
+
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#3972B8]">
                 Daily overview
               </span>
             </div>
@@ -451,64 +792,98 @@ function Dashboard() {
 
             <button
               type="button"
-              onClick={() => navigateTo("/finance")}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:mt-5"
+              onClick={() => navigateTo("/reports")}
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900"
             >
-              View business insights <span className="text-lg">↗</span>
+              View business insights
+              <span className="text-lg">↗</span>
             </button>
+
           </div>
 
-          <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-blue-300/25 blur-3xl sm:-right-8 sm:-top-12 sm:h-64 sm:w-64 sm:bg-blue-300/30" />
-          <div className="pointer-events-none absolute -bottom-20 right-4 h-40 w-40 rounded-full bg-cyan-300/15 blur-3xl sm:-bottom-16 sm:right-20 sm:h-48 sm:w-48 sm:bg-cyan-300/20" />
+          <div className="pointer-events-none absolute -right-8 -top-12 h-64 w-64 rounded-full bg-blue-300/30 blur-3xl" />
 
-          <div className="pointer-events-none absolute bottom-0 right-4 hidden h-36 w-56 items-center justify-center sm:flex lg:right-12 lg:h-40 lg:w-64">
-            <div className="relative flex h-20 w-20 rotate-[-8deg] items-center justify-center rounded-[22px] bg-gradient-to-br from-blue-500 to-blue-800 text-4xl text-white shadow-xl shadow-blue-300/60 sm:h-24 sm:w-24 sm:rounded-[26px] sm:text-5xl">
+          <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
+
+          <div className="pointer-events-none absolute bottom-0 right-8 hidden h-40 w-64 items-center justify-center sm:flex lg:right-16">
+            <div className="flex h-24 w-24 rotate-[-8deg] items-center justify-center rounded-[26px] bg-gradient-to-br from-blue-500 to-blue-800 text-5xl text-white shadow-xl">
               ♜
             </div>
-            <div className="absolute bottom-5 right-1 flex h-10 w-10 items-center justify-center rounded-full border-4 border-amber-200 bg-amber-300 text-lg font-extrabold text-amber-800 shadow-lg sm:bottom-7 sm:right-2 sm:h-12 sm:w-12 sm:text-xl">
+
+            <div className="absolute bottom-7 right-2 flex h-12 w-12 items-center justify-center rounded-full border-4 border-amber-200 bg-amber-300 text-xl font-extrabold text-amber-800 shadow-lg">
               ₹
             </div>
-            <span className="absolute right-0 top-0 text-3xl text-teal-500 sm:top-1 sm:text-4xl">
-              ✦
-            </span>
-            <span className="absolute left-1 top-3 text-2xl text-teal-400 sm:left-2 sm:top-5 sm:text-3xl">
-              ✧
-            </span>
           </div>
+
         </section>
 
-        {/* Summary cards */}
+        {/* ERROR MESSAGE */}
+
+        {error && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{error}</span>
+
+            <button
+              type="button"
+              onClick={() => loadDashboard()}
+              className="font-bold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* BUSINESS OVERVIEW */}
+
         <section>
-          <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+
+          <div className="mb-4 flex items-center justify-between gap-3">
+
             <div>
               <h2 className="text-base font-extrabold text-[#17365D] sm:text-lg">
                 Business overview
               </h2>
-              <p className="mt-0.5 text-xs text-slate-400 sm:mt-1 sm:text-sm">
-                Key financial indicators for today
+
+              <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+                Live financial indicators for today
               </p>
             </div>
-            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:px-3 sm:py-1.5">
+
+            <span className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Today
             </span>
+
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+
             {summaryCards.map((card) => (
-              <SummaryCard key={card.title} card={card} />
+              <SummaryCard
+                key={card.title}
+                card={card}
+                loading={loading}
+              />
             ))}
+
           </div>
+
         </section>
 
-        {/* Quick actions + Pending */}
-        <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-3">
+        {/* QUICK ACTIONS + PENDING APPROVALS */}
+
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+
+          {/* QUICK ACTIONS */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-3">
+
             <SectionHeading
               title="Quick actions"
               description="Common tasks right at your fingertips"
             />
 
-            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:mt-5 sm:grid-cols-2 sm:gap-3">
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
               {quickActions.map((action) => {
                 const theme = colorStyles[action.color];
 
@@ -517,11 +892,10 @@ function Dashboard() {
                     key={action.title}
                     type="button"
                     onClick={() => navigateTo(action.href)}
-                    className={`group flex min-h-[64px] min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:gap-4 sm:p-4 ${theme.border}`}
+                    className={`group flex min-w-0 items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm ${theme.border}`}
                   >
-                    <span
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-colors sm:h-12 sm:w-12 sm:text-xl ${theme.icon} ${theme.hover}`}
-                    >
+
+                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}>
                       {action.icon}
                     </span>
 
@@ -529,7 +903,8 @@ function Dashboard() {
                       <span className="block text-sm font-extrabold text-slate-700">
                         {action.title}
                       </span>
-                      <span className="mt-0.5 block text-xs leading-5 text-slate-400">
+
+                      <span className="mt-1 block text-xs leading-5 text-slate-400">
                         {action.description}
                       </span>
                     </span>
@@ -537,36 +912,43 @@ function Dashboard() {
                     <span className="text-base text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600 sm:text-lg">
                       →
                     </span>
+
                   </button>
                 );
               })}
+
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-2">
+          {/* PENDING APPROVALS */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
+
             <SectionHeading
               title="Pending approvals"
               description="Items that may need your attention"
               action={
                 <button
                   type="button"
-                  onClick={() => navigateTo("/loans")}
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                  onClick={() => navigateTo("/group-loans")}
+                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600 transition hover:bg-blue-50"
                 >
                   View all ↗
                 </button>
               }
             />
 
-            <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
+            <div className="mt-5 space-y-3">
+
               {pendingItems.map((item) => (
-                <div
+                <button
                   key={item.title}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 transition hover:border-blue-100 hover:bg-slate-50/70 sm:p-3.5"
+                  type="button"
+                  onClick={() => navigateTo(item.href)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 text-left transition hover:border-blue-100 hover:bg-slate-50/70"
                 >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold sm:h-11 sm:w-11 ${item.color}`}
-                  >
+
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${item.color}`}>
                     {item.count}
                   </div>
 
@@ -574,77 +956,109 @@ function Dashboard() {
                     <p className="truncate text-sm font-extrabold text-slate-700">
                       {item.title}
                     </p>
-                    <p className="mt-0.5 text-xs leading-5 text-slate-400">
+
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
                       {item.description}
                     </p>
                   </div>
 
                   <span className="text-lg text-slate-300">›</span>
-                </div>
+
+                </button>
               ))}
+
             </div>
           </div>
+
         </section>
 
-        {/* Recent activity + Role */}
-        <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-2">
+        {/* RECENT ACTIVITIES + WORKSPACE */}
+
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+
+          {/* RECENT ACTIVITIES */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
+
             <SectionHeading
               title="Recent activity"
-              description="Latest activity overview"
+              description="Latest loan and collection records"
               action={
                 <button
                   type="button"
                   onClick={() => navigateTo("/collections")}
-                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600 transition hover:bg-blue-50"
                 >
                   View records ↗
                 </button>
               }
             />
 
-            <div className="mt-4 divide-y divide-slate-100 sm:mt-5">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.title}
-                  className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0 sm:py-4"
-                >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base font-bold sm:h-11 sm:w-11 sm:text-lg ${activity.color}`}
-                  >
-                    {activity.icon}
-                  </div>
+            <div className="mt-5 divide-y divide-slate-100">
 
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-slate-700">
-                      {activity.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {activity.description}
-                    </p>
-                  </div>
-
-                  <span className="shrink-0 text-xs font-extrabold text-slate-600">
-                    {activity.amount}
-                  </span>
+              {loading ? (
+                <div className="py-8 text-center text-sm text-slate-400">
+                  Loading activities...
                 </div>
-              ))}
-            </div>
+              ) : recentActivities.length === 0 ? (
+                <div className="py-8 text-center">
+                  <div className="text-3xl text-slate-300">
+                    ▤
+                  </div>
 
-            <p className="mt-4 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 sm:mt-5 sm:py-3">
-              <span className="mt-0.5 shrink-0">ⓘ</span>
-              <span>
-                Sample activity only. Connect your backend to display actual
-                records.
-              </span>
-            </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-500">
+                    No recent activities found
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    New loan and collection records will appear here.
+                  </p>
+                </div>
+              ) : (
+                recentActivities.map((activity, index) => (
+                  <div
+                    key={`${activity.title}-${index}`}
+                    className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
+                  >
+
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${activity.color}`}>
+                      {activity.icon}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-extrabold text-slate-700">
+                        {activity.title}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs text-slate-400">
+                        {activity.description}
+                      </p>
+
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {formatDate(activity.date)}
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 text-xs font-extrabold text-slate-600">
+                      {activity.amount}
+                    </span>
+
+                  </div>
+                ))
+              )}
+
+            </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6">
-            <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-blue-50 blur-2xl sm:h-32 sm:w-32" />
+          {/* ROLE INFORMATION */}
+
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
+
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-50 blur-2xl" />
 
             <div className="relative">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-lg text-blue-700 sm:h-12 sm:w-12 sm:text-xl">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700">
                 ♙
               </div>
 
@@ -660,26 +1074,34 @@ function Dashboard() {
                 {roleInfo.description}
               </p>
 
-              <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3.5 sm:mt-5 sm:p-4">
+              <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 p-4">
+
                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                   Signed in as
                 </p>
-                <p className="mt-1.5 break-words text-sm font-extrabold text-slate-700 sm:mt-2">
+
+                <p className="mt-2 break-words text-sm font-extrabold text-slate-700">
                   {user?.username || firstName}
                 </p>
+
                 <p className="mt-1 break-words text-xs font-medium text-slate-400">
                   {role}
                 </p>
+
               </div>
             </div>
           </div>
+
         </section>
 
-        <footer className="border-t border-slate-200/70 pt-4 text-center text-xs font-medium text-slate-400 sm:pt-5">
+        {/* FOOTER */}
+
+        <footer className="border-t border-slate-200/70 pb-3 pt-5 text-center text-xs font-medium text-slate-400">
           SMLNEXGEN · Microfinance Management System
           <span className="mx-1.5 sm:mx-2">•</span>
           Secure workspace
         </footer>
+
       </main>
     </div>
   );

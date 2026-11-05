@@ -66,6 +66,12 @@ const Sidebar = () => {
       icon: "💳",
       roles: ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"],
     },
+    {
+      name: "Collections",
+      path: "/collections",
+      icon: "💰",
+      roles: ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"],
+    },
   ];
 
   const filteredMenu = menuItems.filter((item) =>
