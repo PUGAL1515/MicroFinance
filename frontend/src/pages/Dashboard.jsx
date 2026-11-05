@@ -140,7 +140,6 @@ const colorStyles = {
 
 function getGreeting() {
   const hour = new Date().getHours();
-
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
 
@@ -158,7 +157,7 @@ function SummaryCard({ card, loading }) {
     <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5">
 
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">
             {card.title}
           </p>
@@ -173,7 +172,7 @@ function SummaryCard({ card, loading }) {
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-colors sm:h-11 sm:w-11 sm:text-xl ${theme.icon} ${theme.hover}`}
         >
           {card.icon}
         </div>
@@ -196,9 +195,9 @@ function SummaryCard({ card, loading }) {
 
 function SectionHeading({ title, description, action }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 className="text-lg font-extrabold tracking-tight text-[#17365D]">
+    <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+      <div className="min-w-0">
+        <h2 className="text-base font-extrabold tracking-tight text-[#17365D] sm:text-lg">
           {title}
         </h2>
 
@@ -286,10 +285,7 @@ function Dashboard() {
       "Your dashboard provides an overview of the features available to your account.",
   };
 
-  const initials = String(firstName)
-    .trim()
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = String(firstName).trim().slice(0, 2).toUpperCase();
 
   // ------------------------------------------------
   // LOAD DASHBOARD DATA
@@ -663,7 +659,6 @@ function Dashboard() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
               S
             </div>
-
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold tracking-wide text-[#17365D]">
                 SMLNEXGEN
@@ -677,6 +672,7 @@ function Dashboard() {
 
           <div className="flex items-center gap-3">
 
+            {/* Notification */}
             <button
               type="button"
               aria-label="Notifications"
@@ -688,7 +684,7 @@ function Dashboard() {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
             </button>
 
-            <div className="hidden h-9 border-l border-slate-200 sm:block" />
+            <div className="h-8 border-l border-slate-200" />
 
             <div className="flex items-center gap-2.5">
               <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
@@ -727,12 +723,10 @@ function Dashboard() {
                 year: "numeric",
               })}
             </p>
-
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-[#17365D] sm:text-4xl">
+            <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-[#17365D] sm:mt-2 sm:text-3xl lg:text-4xl">
               Dashboard
             </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-1.5 text-sm text-slate-500 sm:mt-2">
               Here's what's happening with your business today.
             </p>
           </div>
@@ -744,8 +738,8 @@ function Dashboard() {
               onClick={exportReport}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
-              <span className="text-lg">⇩</span>
-              Export report
+              <span className="text-base sm:text-lg">⇩</span>
+              <span>Export</span>
             </button>
 
             <button
@@ -787,7 +781,7 @@ function Dashboard() {
               </span>
             </div>
 
-            <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-[#17365D] sm:text-3xl">
+            <h2 className="mt-4 text-xl font-extrabold tracking-tight text-[#17365D] sm:mt-5 sm:text-2xl lg:text-3xl">
               {getGreeting()}, {firstName}{" "}
               <span className="text-amber-500">✦</span>
             </h2>
@@ -846,7 +840,7 @@ function Dashboard() {
           <div className="mb-4 flex items-center justify-between gap-3">
 
             <div>
-              <h2 className="text-lg font-extrabold text-[#17365D]">
+              <h2 className="text-base font-extrabold text-[#17365D] sm:text-lg">
                 Business overview
               </h2>
 
@@ -915,7 +909,7 @@ function Dashboard() {
                       </span>
                     </span>
 
-                    <span className="text-lg text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600">
+                    <span className="text-base text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600 sm:text-lg">
                       →
                     </span>
 
@@ -1068,15 +1062,15 @@ function Dashboard() {
                 ♙
               </div>
 
-              <h2 className="mt-4 text-lg font-extrabold text-[#17365D]">
+              <h2 className="mt-3 text-base font-extrabold text-[#17365D] sm:mt-4 sm:text-lg">
                 Your workspace
               </h2>
 
-              <span className="mt-2 inline-flex max-w-full rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700">
+              <span className="mt-2 inline-flex max-w-full rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700 sm:px-3 sm:py-1.5">
                 {roleInfo.label}
               </span>
 
-              <p className="mt-3 text-sm leading-6 text-slate-500">
+              <p className="mt-2.5 text-sm leading-6 text-slate-500 sm:mt-3">
                 {roleInfo.description}
               </p>
 
@@ -1104,7 +1098,7 @@ function Dashboard() {
 
         <footer className="border-t border-slate-200/70 pb-3 pt-5 text-center text-xs font-medium text-slate-400">
           SMLNEXGEN · Microfinance Management System
-          <span className="mx-2">•</span>
+          <span className="mx-1.5 sm:mx-2">•</span>
           Secure workspace
         </footer>
 
