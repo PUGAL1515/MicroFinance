@@ -21,3 +21,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
