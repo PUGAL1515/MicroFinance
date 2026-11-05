@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const summaryCards = [
@@ -173,7 +173,6 @@ const colorStyles = {
 
 function getGreeting() {
   const hour = new Date().getHours();
-
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
@@ -183,32 +182,32 @@ function SummaryCard({ card }) {
   const theme = colorStyles[card.color];
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5 sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">
             {card.title}
           </p>
-          <p className="mt-4 break-words text-2xl font-extrabold tracking-tight text-[#17365D] sm:text-[27px]">
+          <p className="mt-2 break-words text-xl font-extrabold tracking-tight text-[#17365D] sm:mt-3 sm:text-2xl">
             {card.value}
           </p>
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-colors sm:h-11 sm:w-11 sm:text-xl ${theme.icon} ${theme.hover}`}
         >
           {card.icon}
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-        <p className="text-xs font-medium text-slate-400">
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 sm:mt-4">
+        <p className="truncate text-xs font-medium text-slate-400">
           {card.subtitle}
         </p>
 
         {card.trend && (
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold ${
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold sm:h-7 sm:w-7 sm:text-sm ${
               card.color === "orange"
                 ? "bg-orange-50 text-orange-600"
                 : "bg-emerald-50 text-emerald-600"
@@ -226,12 +225,12 @@ function SummaryCard({ card }) {
 
 function SectionHeading({ title, description, action }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 className="text-lg font-extrabold tracking-tight text-[#17365D]">
+    <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+      <div className="min-w-0">
+        <h2 className="text-base font-extrabold tracking-tight text-[#17365D] sm:text-lg">
           {title}
         </h2>
-        <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">
+        <p className="mt-0.5 text-xs leading-5 text-slate-400 sm:mt-1 sm:text-sm">
           {description}
         </p>
       </div>
@@ -260,10 +259,7 @@ function Dashboard() {
       "Your dashboard provides an overview of the features available to your account.",
   };
 
-  const initials = String(firstName)
-    .trim()
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = String(firstName).trim().slice(0, 2).toUpperCase();
 
   function navigateTo(path) {
     window.location.href = path;
@@ -297,14 +293,38 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F4F7FC] text-slate-800">
-      {/* Top navigation */}
+      {/* ===================== HEADER ===================== */}
       <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
-        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        
+        {/* ===== MOBILE + TABLET : ONLY SEARCH BAR ===== */}
+        <div className="block px-3 py-3 lg:hidden">
+          <label className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition focus-within:border-blue-300 focus-within:bg-white">
+            <span className="text-lg text-slate-400">⌕</span>
+            <input
+              type="search"
+              placeholder="Search customers, loans..."
+              aria-label="Search customers and loans"
+              className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && event.currentTarget.value.trim()) {
+                  navigateTo(
+                    `/customers?search=${encodeURIComponent(
+                      event.currentTarget.value.trim()
+                    )}`
+                  );
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {/* ===== DESKTOP : FULL HEADER ===== */}
+        <div className="mx-auto hidden max-w-[1800px] items-center justify-between gap-3 px-5 py-3 lg:flex lg:px-8">
+          {/* Logo */}
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md shadow-blue-900/15">
               S
             </div>
-
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold tracking-wide text-[#17365D]">
                 SMLNEXGEN
@@ -315,8 +335,10 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <label className="hidden min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition focus-within:border-blue-300 focus-within:bg-white md:flex md:w-60 lg:w-80">
+          {/* Right side */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 transition focus-within:border-blue-300 focus-within:bg-white lg:w-64 xl:w-80">
               <span className="text-lg text-slate-400">⌕</span>
               <input
                 type="search"
@@ -335,6 +357,7 @@ function Dashboard() {
               />
             </label>
 
+            {/* Notification */}
             <button
               type="button"
               aria-label="Notifications"
@@ -345,18 +368,18 @@ function Dashboard() {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
             </button>
 
-            <div className="hidden h-9 border-l border-slate-200 sm:block" />
+            <div className="h-8 border-l border-slate-200" />
 
+            {/* User */}
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
                 {initials}
               </div>
-
-              <div className="hidden min-w-0 sm:block">
-                <p className="max-w-36 truncate text-sm font-bold text-slate-800">
+              <div className="min-w-0">
+                <p className="max-w-[140px] truncate text-sm font-bold text-slate-800 xl:max-w-[180px]">
                   {firstName}
                 </p>
-                <p className="max-w-40 truncate text-xs text-slate-400">
+                <p className="max-w-[160px] truncate text-xs text-slate-400 xl:max-w-[200px]">
                   {roleInfo.label}
                 </p>
               </div>
@@ -365,12 +388,12 @@ function Dashboard() {
         </div>
       </header>
 
-      {/* Dashboard content */}
-      <main className="mx-auto max-w-[1800px] space-y-6 p-4 sm:p-6 lg:space-y-7 lg:p-8">
-        {/* Heading and actions */}
-        <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#7890B1]">
+      {/* ===================== MAIN CONTENT ===================== */}
+      <main className="mx-auto max-w-[1800px] space-y-5 p-3 pb-8 sm:space-y-6 sm:p-5 lg:space-y-7 lg:p-8">
+        {/* Page heading + actions */}
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7890B1] sm:text-[11px] sm:tracking-[0.16em]">
               {new Date().toLocaleDateString("en-IN", {
                 weekday: "long",
                 month: "long",
@@ -378,48 +401,46 @@ function Dashboard() {
                 year: "numeric",
               })}
             </p>
-
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-[#17365D] sm:text-4xl">
+            <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-[#17365D] sm:mt-2 sm:text-3xl lg:text-4xl">
               Dashboard
             </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-1.5 text-sm text-slate-500 sm:mt-2">
               Here's what's happening with your business today.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2 sm:gap-2.5">
             <button
               type="button"
               onClick={exportReport}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:flex-none sm:px-4 sm:py-3"
             >
-              <span className="text-lg">⇩</span>
-              Export report
+              <span className="text-base sm:text-lg">⇩</span>
+              <span>Export</span>
             </button>
 
             <button
               type="button"
               onClick={() => navigateTo("/loans")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-3.5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:flex-none sm:px-4 sm:py-3"
             >
-              <span className="text-xl leading-none">+</span>
-              New application
+              <span className="text-lg leading-none sm:text-xl">+</span>
+              <span>New application</span>
             </button>
           </div>
         </section>
 
         {/* Welcome banner */}
-        <section className="relative isolate overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-5 py-7 shadow-sm sm:px-8 sm:py-9">
+        <section className="relative isolate overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-4 py-6 shadow-sm sm:px-6 sm:py-8 lg:px-8 lg:py-9">
           <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-3 py-1.5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-2.5 py-1 sm:px-3 sm:py-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-100" />
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#3972B8]">
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#3972B8] sm:text-[10px]">
                 Daily overview
               </span>
             </div>
 
-            <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-[#17365D] sm:text-3xl">
+            <h2 className="mt-4 text-xl font-extrabold tracking-tight text-[#17365D] sm:mt-5 sm:text-2xl lg:text-3xl">
               {getGreeting()}, {firstName}{" "}
               <span className="text-amber-500">✦</span>
             </h2>
@@ -431,26 +452,26 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => navigateTo("/finance")}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:mt-5"
             >
               View business insights <span className="text-lg">↗</span>
             </button>
           </div>
 
-          <div className="pointer-events-none absolute -right-8 -top-12 h-64 w-64 rounded-full bg-blue-300/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-blue-300/25 blur-3xl sm:-right-8 sm:-top-12 sm:h-64 sm:w-64 sm:bg-blue-300/30" />
+          <div className="pointer-events-none absolute -bottom-20 right-4 h-40 w-40 rounded-full bg-cyan-300/15 blur-3xl sm:-bottom-16 sm:right-20 sm:h-48 sm:w-48 sm:bg-cyan-300/20" />
 
-          <div className="pointer-events-none absolute bottom-0 right-8 hidden h-40 w-64 items-center justify-center sm:flex lg:right-16">
-            <div className="relative flex h-24 w-24 rotate-[-8deg] items-center justify-center rounded-[26px] bg-gradient-to-br from-blue-500 to-blue-800 text-5xl text-white shadow-xl shadow-blue-300/60">
+          <div className="pointer-events-none absolute bottom-0 right-4 hidden h-36 w-56 items-center justify-center sm:flex lg:right-12 lg:h-40 lg:w-64">
+            <div className="relative flex h-20 w-20 rotate-[-8deg] items-center justify-center rounded-[22px] bg-gradient-to-br from-blue-500 to-blue-800 text-4xl text-white shadow-xl shadow-blue-300/60 sm:h-24 sm:w-24 sm:rounded-[26px] sm:text-5xl">
               ♜
             </div>
-            <div className="absolute bottom-7 right-2 flex h-12 w-12 items-center justify-center rounded-full border-4 border-amber-200 bg-amber-300 text-xl font-extrabold text-amber-800 shadow-lg">
+            <div className="absolute bottom-5 right-1 flex h-10 w-10 items-center justify-center rounded-full border-4 border-amber-200 bg-amber-300 text-lg font-extrabold text-amber-800 shadow-lg sm:bottom-7 sm:right-2 sm:h-12 sm:w-12 sm:text-xl">
               ₹
             </div>
-            <span className="absolute right-0 top-1 text-4xl text-teal-500">
+            <span className="absolute right-0 top-0 text-3xl text-teal-500 sm:top-1 sm:text-4xl">
               ✦
             </span>
-            <span className="absolute left-2 top-5 text-3xl text-teal-400">
+            <span className="absolute left-1 top-3 text-2xl text-teal-400 sm:left-2 sm:top-5 sm:text-3xl">
               ✧
             </span>
           </div>
@@ -458,36 +479,36 @@ function Dashboard() {
 
         {/* Summary cards */}
         <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
             <div>
-              <h2 className="text-lg font-extrabold text-[#17365D]">
+              <h2 className="text-base font-extrabold text-[#17365D] sm:text-lg">
                 Business overview
               </h2>
-              <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+              <p className="mt-0.5 text-xs text-slate-400 sm:mt-1 sm:text-sm">
                 Key financial indicators for today
               </p>
             </div>
-            <span className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:px-3 sm:py-1.5">
               Today
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
             {summaryCards.map((card) => (
               <SummaryCard key={card.title} card={card} />
             ))}
           </div>
         </section>
 
-        {/* Quick actions and approvals */}
-        <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-3">
+        {/* Quick actions + Pending */}
+        <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-3">
             <SectionHeading
               title="Quick actions"
               description="Common tasks right at your fingertips"
             />
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:mt-5 sm:grid-cols-2 sm:gap-3">
               {quickActions.map((action) => {
                 const theme = colorStyles[action.color];
 
@@ -496,10 +517,10 @@ function Dashboard() {
                     key={action.title}
                     type="button"
                     onClick={() => navigateTo(action.href)}
-                    className={`group flex min-w-0 items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${theme.border}`}
+                    className={`group flex min-h-[64px] min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:gap-4 sm:p-4 ${theme.border}`}
                   >
                     <span
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-colors sm:h-12 sm:w-12 sm:text-xl ${theme.icon} ${theme.hover}`}
                     >
                       {action.icon}
                     </span>
@@ -508,12 +529,12 @@ function Dashboard() {
                       <span className="block text-sm font-extrabold text-slate-700">
                         {action.title}
                       </span>
-                      <span className="mt-1 block text-xs leading-5 text-slate-400">
+                      <span className="mt-0.5 block text-xs leading-5 text-slate-400">
                         {action.description}
                       </span>
                     </span>
 
-                    <span className="text-lg text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600">
+                    <span className="text-base text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600 sm:text-lg">
                       →
                     </span>
                   </button>
@@ -522,8 +543,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Pending approvals */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-2">
             <SectionHeading
               title="Pending approvals"
               description="Items that may need your attention"
@@ -538,14 +558,14 @@ function Dashboard() {
               }
             />
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
               {pendingItems.map((item) => (
                 <div
                   key={item.title}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 transition hover:border-blue-100 hover:bg-slate-50/70"
+                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 transition hover:border-blue-100 hover:bg-slate-50/70 sm:p-3.5"
                 >
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${item.color}`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold sm:h-11 sm:w-11 ${item.color}`}
                   >
                     {item.count}
                   </div>
@@ -554,7 +574,7 @@ function Dashboard() {
                     <p className="truncate text-sm font-extrabold text-slate-700">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                    <p className="mt-0.5 text-xs leading-5 text-slate-400">
                       {item.description}
                     </p>
                   </div>
@@ -566,9 +586,9 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* Recent activity and role */}
-        <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
+        {/* Recent activity + Role */}
+        <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6 xl:col-span-2">
             <SectionHeading
               title="Recent activity"
               description="Latest activity overview"
@@ -583,14 +603,14 @@ function Dashboard() {
               }
             />
 
-            <div className="mt-5 divide-y divide-slate-100">
+            <div className="mt-4 divide-y divide-slate-100 sm:mt-5">
               {recentActivities.map((activity) => (
                 <div
                   key={activity.title}
-                  className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
+                  className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0 sm:py-4"
                 >
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${activity.color}`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base font-bold sm:h-11 sm:w-11 sm:text-lg ${activity.color}`}
                   >
                     {activity.icon}
                   </div>
@@ -599,7 +619,7 @@ function Dashboard() {
                     <p className="text-sm font-extrabold text-slate-700">
                       {activity.title}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-400">
                       {activity.description}
                     </p>
                   </div>
@@ -611,8 +631,8 @@ function Dashboard() {
               ))}
             </div>
 
-            <p className="mt-5 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-3 text-xs leading-5 text-amber-800">
-              <span className="mt-0.5">ⓘ</span>
+            <p className="mt-4 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800 sm:mt-5 sm:py-3">
+              <span className="mt-0.5 shrink-0">ⓘ</span>
               <span>
                 Sample activity only. Connect your backend to display actual
                 records.
@@ -620,32 +640,31 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* Role information */}
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
-            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-50 blur-2xl" />
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 lg:p-6">
+            <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-blue-50 blur-2xl sm:h-32 sm:w-32" />
 
             <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-lg text-blue-700 sm:h-12 sm:w-12 sm:text-xl">
                 ♙
               </div>
 
-              <h2 className="mt-4 text-lg font-extrabold text-[#17365D]">
+              <h2 className="mt-3 text-base font-extrabold text-[#17365D] sm:mt-4 sm:text-lg">
                 Your workspace
               </h2>
 
-              <span className="mt-2 inline-flex max-w-full rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700">
+              <span className="mt-2 inline-flex max-w-full rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700 sm:px-3 sm:py-1.5">
                 {roleInfo.label}
               </span>
 
-              <p className="mt-3 text-sm leading-6 text-slate-500">
+              <p className="mt-2.5 text-sm leading-6 text-slate-500 sm:mt-3">
                 {roleInfo.description}
               </p>
 
-              <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3.5 sm:mt-5 sm:p-4">
                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                   Signed in as
                 </p>
-                <p className="mt-2 break-words text-sm font-extrabold text-slate-700">
+                <p className="mt-1.5 break-words text-sm font-extrabold text-slate-700 sm:mt-2">
                   {user?.username || firstName}
                 </p>
                 <p className="mt-1 break-words text-xs font-medium text-slate-400">
@@ -656,9 +675,9 @@ function Dashboard() {
           </div>
         </section>
 
-        <footer className="border-t border-slate-200/70 pb-3 pt-5 text-center text-xs font-medium text-slate-400">
+        <footer className="border-t border-slate-200/70 pt-4 text-center text-xs font-medium text-slate-400 sm:pt-5">
           SMLNEXGEN · Microfinance Management System
-          <span className="mx-2">•</span>
+          <span className="mx-1.5 sm:mx-2">•</span>
           Secure workspace
         </footer>
       </main>
