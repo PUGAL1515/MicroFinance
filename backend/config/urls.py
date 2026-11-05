@@ -9,4 +9,5 @@ urlpatterns = [
     path("api/", include("loans.urls")),  
     path('api/fd/', include('fd.urls')),
     path("api/rd/", include("rd.urls")),
+    path("api/collection/", include("collection.urls")),
 ]

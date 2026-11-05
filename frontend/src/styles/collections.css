@@ -1,0 +1,70 @@
+
+.collection-page {
+  animation: collectionPageEnter 0.45s ease-out both;
+}
+
+.collection-animate {
+  animation: collectionCardEnter 0.55s ease-out both;
+}
+
+.collection-content-enter {
+  animation: collectionContentEnter 0.3s ease-out both;
+}
+
+.collection-modal-enter {
+  animation: collectionModalEnter 0.3s ease-out both;
+}
+
+@keyframes collectionPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collectionCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collectionContentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collectionModalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-page,
+  .collection-animate,
+  .collection-content-enter,
+  .collection-modal-enter {
+    animation: none !important;
+    transition: none !important;
+  }
+}
