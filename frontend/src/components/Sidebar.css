@@ -1,0 +1,39 @@
+/* Sidebar scrolling */
+.sidebar-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Default: Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Chrome, Edge, Safari */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+/* Show scrollbar when hovering anywhere on sidebar */
+aside:hover .sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(147, 197, 253, 0.65) transparent;
+}
+
+aside:hover .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(147, 197, 253, 0.65);
+}
+
+/* Hover on scrollbar thumb */
+aside:hover .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}

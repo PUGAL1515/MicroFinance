@@ -11,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import RD from "./pages/RD";
 import FD from "./pages/FD";
 import GroupLoans from "./pages/GroupLoans";
-import Reports from "./pages/Reports";
+import Reports from "../src/pages/Reports";
 import Users from "./pages/Users";
 
 // Customer
@@ -136,7 +136,7 @@ function App() {
                 <ProtectedRoute
                   allowedRoles={["SUPER_ADMIN"]}
                 >
-                  <Reports />
+                  <Reports/>
                 </ProtectedRoute>
               }
             />
