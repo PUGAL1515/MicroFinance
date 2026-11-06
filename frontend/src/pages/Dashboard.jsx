@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -91,10 +90,7 @@ function getCustomerName(item) {
   return (
     item.customer_name ||
     item.customer?.full_name ||
-    [
-      item.customer?.first_name,
-      item.customer?.last_name,
-    ]
+    [item.customer?.first_name, item.customer?.last_name]
       .filter(Boolean)
       .join(" ") ||
     item.group_name ||
@@ -142,7 +138,6 @@ function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
-
   return "Good evening";
 }
 
@@ -155,7 +150,6 @@ function SummaryCard({ card, loading }) {
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5">
-
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">
@@ -200,12 +194,10 @@ function SectionHeading({ title, description, action }) {
         <h2 className="text-base font-extrabold tracking-tight text-[#17365D] sm:text-lg">
           {title}
         </h2>
-
         <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">
           {description}
         </p>
       </div>
-
       {action}
     </div>
   );
@@ -255,19 +247,16 @@ function Dashboard() {
       description:
         "Manage customers, loans, collections, deposits, finance and user access.",
     },
-
     RD_FD_ADMIN: {
       label: "RD & FD Administrator",
       description:
         "Manage recurring deposits, fixed deposits and related customer accounts.",
     },
-
     GROUP_LOAN_ADMIN: {
       label: "Group Loan Administrator",
       description:
         "Manage group loan operations, repayment tracking and collections.",
     },
-
     BRANCH_MANAGER: {
       label: "Branch Manager",
       description:
@@ -280,7 +269,6 @@ function Dashboard() {
       .replaceAll("_", " ")
       .toLowerCase()
       .replace(/\b\w/g, (letter) => letter.toUpperCase()),
-
     description:
       "Your dashboard provides an overview of the features available to your account.",
   };
@@ -301,28 +289,21 @@ function Dashboard() {
     setError("");
 
     const endpoints = [
-      apiRequest("/api/collections/dashboard/"),
-      apiRequest("/api/collections/today-dues/"),
-      apiRequest("/api/collections/overdue/"),
-      apiRequest("/api/collections/payments/"),
+      apiRequest("/api/collection/dashboard/"),
+      apiRequest("/api/collection/today-dues/"),
+      apiRequest("/api/collection/overdue/"),
+      apiRequest("/api/collection/payments/"),
       apiRequest("/api/group-loan/applications/"),
     ];
 
     const results = await Promise.allSettled(endpoints);
 
-    const [
-      collectionDashboard,
-      todayDues,
-      overdue,
-      payments,
-      applications,
-    ] = results.map((result) =>
-      result.status === "fulfilled" ? result.value : null
-    );
+    const [collectionDashboard, todayDues, overdue, payments, applications] =
+      results.map((result) =>
+        result.status === "fulfilled" ? result.value : null
+      );
 
-    const hasAnyData = results.some(
-      (result) => result.status === "fulfilled"
-    );
+    const hasAnyData = results.some((result) => result.status === "fulfilled");
 
     if (!hasAnyData) {
       setError(
@@ -335,13 +316,8 @@ function Dashboard() {
     const paymentList = getList(payments);
     const applicationList = getList(applications);
 
-    // Today's collections
     const todayPayments = paymentList.filter((payment) =>
-      isToday(
-        payment.payment_date ||
-          payment.created_at ||
-          payment.date
-      )
+      isToday(payment.payment_date || payment.created_at || payment.date)
     );
 
     const collectedToday = collectionDashboard
@@ -352,53 +328,37 @@ function Dashboard() {
           0
         );
 
-    // Today's due
     const todayDue = collectionDashboard
       ? getAmount(collectionDashboard.today_due_amount)
       : dueList.reduce(
-          (sum, item) =>
-            sum +
-            getAmount(item.balance_due ?? item.total_due),
+          (sum, item) => sum + getAmount(item.balance_due ?? item.total_due),
           0
         );
 
-    // Overdue amount
     const overdueAmount = collectionDashboard
       ? getAmount(collectionDashboard.overdue_amount)
       : overdueList.reduce(
-          (sum, item) =>
-            sum +
-            getAmount(item.balance_due ?? item.total_due),
+          (sum, item) => sum + getAmount(item.balance_due ?? item.total_due),
           0
         );
 
-    // Pending loan applications
     const pendingApplications = applicationList.filter((item) =>
-      [
-        "submitted",
-        "pending",
-        "pending_approval",
-        "under_review",
-      ].includes(getStatus(item))
+      ["submitted", "pending", "pending_approval", "under_review"].includes(
+        getStatus(item)
+      )
     );
 
-    // Disbursed today
     const disbursedApplications = applicationList.filter(
       (item) =>
         getStatus(item) === "disbursed" &&
-        isToday(
-          item.disbursed_at ||
-            item.disbursement_date
-        )
+        isToday(item.disbursed_at || item.disbursement_date)
     );
 
     const disbursedToday = disbursedApplications.reduce(
       (sum, item) =>
         sum +
         getAmount(
-          item.approved_total ||
-            item.approved_amount ||
-            item.disbursed_amount
+          item.approved_total || item.approved_amount || item.disbursed_amount
         ),
       0
     );
@@ -407,25 +367,14 @@ function Dashboard() {
       todayDue,
       collectedToday,
       overdueAmount,
-
       pendingApprovals: pendingApplications.length,
-
       disbursedToday,
-
-      dueCustomers:
-        collectionDashboard?.today_due_count ??
-        dueList.length,
-
+      dueCustomers: collectionDashboard?.today_due_count ?? dueList.length,
       overdueCustomers:
-        collectionDashboard?.overdue_count ??
-        overdueList.length,
-
+        collectionDashboard?.overdue_count ?? overdueList.length,
       collectionCount:
-        collectionDashboard?.today_collection_count ??
-        todayPayments.length,
-
+        collectionDashboard?.today_collection_count ?? todayPayments.length,
       disbursedCount: disbursedApplications.length,
-
       payments: paymentList,
       applications: applicationList,
       customerLoans: [],
@@ -551,50 +500,30 @@ function Dashboard() {
   const recentActivities = [
     ...dashboardData.payments.map((payment) => ({
       title: "Loan collection",
-
       description: `${getCustomerName(payment)} · ${
         payment.payment_method || "Payment"
       }`,
-
-      amount: formatINR(
-        payment.amount || payment.total_amount
-      ),
-
+      amount: formatINR(payment.amount || payment.total_amount),
       icon: "₹",
-
       color: "bg-emerald-50 text-emerald-700",
-
-      date:
-        payment.payment_date ||
-        payment.created_at,
+      date: payment.payment_date || payment.created_at,
     })),
-
     ...dashboardData.applications.map((application) => ({
       title: "Loan application",
-
       description: `${
-        application.group_name ||
-        application.customer_name ||
-        "Group loan"
+        application.group_name || application.customer_name || "Group loan"
       } · ${application.status || "Submitted"}`,
-
       amount: application.approved_total
         ? formatINR(application.approved_total)
         : "Application",
-
       icon: "▤",
-
       color: "bg-violet-50 text-violet-700",
-
-      date:
-        application.submitted_at ||
-        application.created_at,
+      date: application.submitted_at || application.created_at,
     })),
   ]
     .sort(
       (a, b) =>
-        new Date(b.date || 0).getTime() -
-        new Date(a.date || 0).getTime()
+        new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
     )
     .slice(0, 5);
 
@@ -613,19 +542,12 @@ function Dashboard() {
   function exportReport() {
     const rows = [
       ["Metric", "Value"],
-      ...summaryCards.map((card) => [
-        card.title,
-        card.value,
-      ]),
+      ...summaryCards.map((card) => [card.title, card.value]),
     ];
 
     const csv = rows
       .map((row) =>
-        row
-          .map((value) =>
-            `"${String(value).replaceAll('"', '""')}"`
-          )
-          .join(",")
+        row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")
       )
       .join("\r\n");
 
@@ -648,14 +570,12 @@ function Dashboard() {
   // ------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#F4F7FC] text-slate-800">
-
-      {/* HEADER */}
-
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
-        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-
-          <div className="flex min-w-0 items-center gap-3">
+    <div className="min-h-screen bg-[#F4F7FC] text-slate-800 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+      {/* HEADER — only on desktop (lg+). Hidden on mobile & tablet */}
+      <header className="sticky top-0 z-30 hidden shrink-0 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md lg:block">
+        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-8 py-3">
+          {/* Brand */}
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
               S
             </div>
@@ -663,57 +583,47 @@ function Dashboard() {
               <p className="truncate text-sm font-extrabold tracking-wide text-[#17365D]">
                 SMLNEXGEN
               </p>
-
               <p className="mt-0.5 text-[11px] font-medium text-slate-400">
                 Microfinance workspace
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-
-            {/* Notification */}
+          {/* Actions */}
+          <div className="flex shrink-0 items-center gap-3">
             <button
               type="button"
               aria-label="Notifications"
               onClick={() => navigateTo("/notifications")}
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
             >
               ♧
-
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
             </button>
 
             <div className="h-8 border-l border-slate-200" />
 
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
+            <div className="flex shrink-0 items-center gap-2.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
                 {initials}
               </div>
-
-              <div className="hidden sm:block">
+              <div className="min-w-0">
                 <p className="max-w-36 truncate text-sm font-bold text-slate-800">
                   {firstName}
                 </p>
-
                 <p className="max-w-40 truncate text-xs text-slate-400">
                   {roleInfo.label}
                 </p>
               </div>
             </div>
-
           </div>
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
-
-      <main className="mx-auto max-w-[1800px] space-y-6 p-4 sm:p-6 lg:space-y-7 lg:p-8">
-
+      {/* MAIN CONTENT — only this part scrolls on desktop */}
+      <main className="mx-auto w-full max-w-[1800px] flex-1 space-y-6 overflow-y-auto p-4 sm:p-6 lg:min-h-0 lg:space-y-7 lg:p-8">
         {/* PAGE TITLE */}
-
-        <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-
+        <section className="mt-12 flex flex-col justify-between gap-4 sm:mt-8 sm:flex-row sm:items-center">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#7890B1]">
               {new Date().toLocaleDateString("en-IN", {
@@ -732,7 +642,6 @@ function Dashboard() {
           </div>
 
           <div className="flex flex-wrap gap-2.5">
-
             <button
               type="button"
               onClick={exportReport}
@@ -757,72 +666,58 @@ function Dashboard() {
               disabled={refreshing}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
             >
-              <span className={refreshing ? "animate-spin" : ""}>
-                ↻
-              </span>
-
+              <span className={refreshing ? "animate-spin" : ""}>↻</span>
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
-
           </div>
         </section>
 
         {/* WELCOME BANNER */}
-
-        <section className="relative isolate overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-5 py-7 shadow-sm sm:px-8 sm:py-9">
-
+        <section className="relative isolate overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-[#EEF5FF] via-[#E5F0FF] to-[#D8E9FF] px-4 py-4 shadow-sm sm:px-6 sm:py-5">
           <div className="relative z-10 max-w-2xl">
-
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-3 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-100" />
-
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#3972B8]">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-white/70 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-100" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#3972B8]">
                 Daily overview
               </span>
             </div>
 
-            <h2 className="mt-4 text-xl font-extrabold tracking-tight text-[#17365D] sm:mt-5 sm:text-2xl lg:text-3xl">
+            <h2 className="mt-2.5 text-lg font-extrabold tracking-tight text-[#17365D] sm:mt-3 sm:text-xl lg:text-2xl">
               {getGreeting()}, {firstName}{" "}
               <span className="text-amber-500">✦</span>
             </h2>
 
-            <p className="mt-2 max-w-lg text-sm leading-6 text-[#6582A8] sm:text-base">
+            <p className="mt-1.5 max-w-lg text-xs leading-5 text-[#6582A8] sm:text-sm">
               Small steps today. Big financial dreams tomorrow.
             </p>
 
             <button
               type="button"
               onClick={() => navigateTo("/reports")}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-white/70 px-2.5 py-1.5 text-xs font-extrabold text-blue-700 transition hover:bg-white hover:text-blue-900 sm:text-sm"
             >
               View business insights
-              <span className="text-lg">↗</span>
+              <span className="text-base">↗</span>
             </button>
-
           </div>
 
-          <div className="pointer-events-none absolute -right-8 -top-12 h-64 w-64 rounded-full bg-blue-300/30 blur-3xl" />
+          <div className="pointer-events-none absolute -right-6 -top-8 h-40 w-40 rounded-full bg-blue-300/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-10 right-16 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
 
-          <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
-
-          <div className="pointer-events-none absolute bottom-0 right-8 hidden h-40 w-64 items-center justify-center sm:flex lg:right-16">
-            <div className="flex h-24 w-24 rotate-[-8deg] items-center justify-center rounded-[26px] bg-gradient-to-br from-blue-500 to-blue-800 text-5xl text-white shadow-xl">
+          <div className="pointer-events-none absolute bottom-0 right-4 hidden h-28 w-44 items-center justify-center sm:flex lg:right-10">
+            <div className="flex h-16 w-16 rotate-[-8deg] items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-800 text-3xl text-white shadow-xl">
               ♜
             </div>
-
-            <div className="absolute bottom-7 right-2 flex h-12 w-12 items-center justify-center rounded-full border-4 border-amber-200 bg-amber-300 text-xl font-extrabold text-amber-800 shadow-lg">
+            <div className="absolute bottom-5 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-200 bg-amber-300 text-base font-extrabold text-amber-800 shadow-lg">
               ₹
             </div>
           </div>
-
         </section>
 
         {/* ERROR MESSAGE */}
-
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span>{error}</span>
-
             <button
               type="button"
               onClick={() => loadDashboard()}
@@ -834,56 +729,38 @@ function Dashboard() {
         )}
 
         {/* BUSINESS OVERVIEW */}
-
         <section>
-
           <div className="mb-4 flex items-center justify-between gap-3">
-
             <div>
               <h2 className="text-base font-extrabold text-[#17365D] sm:text-lg">
                 Business overview
               </h2>
-
               <p className="mt-1 text-xs text-slate-400 sm:text-sm">
                 Live financial indicators for today
               </p>
             </div>
-
             <span className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Today
             </span>
-
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-
             {summaryCards.map((card) => (
-              <SummaryCard
-                key={card.title}
-                card={card}
-                loading={loading}
-              />
+              <SummaryCard key={card.title} card={card} loading={loading} />
             ))}
-
           </div>
-
         </section>
 
         {/* QUICK ACTIONS + PENDING APPROVALS */}
-
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-
           {/* QUICK ACTIONS */}
-
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-3">
-
             <SectionHeading
               title="Quick actions"
               description="Common tasks right at your fingertips"
             />
 
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-
               {quickActions.map((action) => {
                 const theme = colorStyles[action.color];
 
@@ -894,8 +771,9 @@ function Dashboard() {
                     onClick={() => navigateTo(action.href)}
                     className={`group flex min-w-0 items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm ${theme.border}`}
                   >
-
-                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}>
+                    <span
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold transition-colors ${theme.icon} ${theme.hover}`}
+                    >
                       {action.icon}
                     </span>
 
@@ -903,7 +781,6 @@ function Dashboard() {
                       <span className="block text-sm font-extrabold text-slate-700">
                         {action.title}
                       </span>
-
                       <span className="mt-1 block text-xs leading-5 text-slate-400">
                         {action.description}
                       </span>
@@ -912,18 +789,14 @@ function Dashboard() {
                     <span className="text-base text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600 sm:text-lg">
                       →
                     </span>
-
                   </button>
                 );
               })}
-
             </div>
           </div>
 
           {/* PENDING APPROVALS */}
-
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
-
             <SectionHeading
               title="Pending approvals"
               description="Items that may need your attention"
@@ -939,7 +812,6 @@ function Dashboard() {
             />
 
             <div className="mt-5 space-y-3">
-
               {pendingItems.map((item) => (
                 <button
                   key={item.title}
@@ -947,8 +819,9 @@ function Dashboard() {
                   onClick={() => navigateTo(item.href)}
                   className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 text-left transition hover:border-blue-100 hover:bg-slate-50/70"
                 >
-
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${item.color}`}>
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${item.color}`}
+                  >
                     {item.count}
                   </div>
 
@@ -956,30 +829,22 @@ function Dashboard() {
                     <p className="truncate text-sm font-extrabold text-slate-700">
                       {item.title}
                     </p>
-
                     <p className="mt-1 text-xs leading-5 text-slate-400">
                       {item.description}
                     </p>
                   </div>
 
                   <span className="text-lg text-slate-300">›</span>
-
                 </button>
               ))}
-
             </div>
           </div>
-
         </section>
 
         {/* RECENT ACTIVITIES + WORKSPACE */}
-
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-
           {/* RECENT ACTIVITIES */}
-
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6 xl:col-span-2">
-
             <SectionHeading
               title="Recent activity"
               description="Latest loan and collection records"
@@ -995,21 +860,16 @@ function Dashboard() {
             />
 
             <div className="mt-5 divide-y divide-slate-100">
-
               {loading ? (
                 <div className="py-8 text-center text-sm text-slate-400">
                   Loading activities...
                 </div>
               ) : recentActivities.length === 0 ? (
                 <div className="py-8 text-center">
-                  <div className="text-3xl text-slate-300">
-                    ▤
-                  </div>
-
+                  <div className="text-3xl text-slate-300">▤</div>
                   <p className="mt-2 text-sm font-semibold text-slate-500">
                     No recent activities found
                   </p>
-
                   <p className="mt-1 text-xs text-slate-400">
                     New loan and collection records will appear here.
                   </p>
@@ -1020,8 +880,9 @@ function Dashboard() {
                     key={`${activity.title}-${index}`}
                     className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
                   >
-
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${activity.color}`}>
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${activity.color}`}
+                    >
                       {activity.icon}
                     </div>
 
@@ -1029,11 +890,9 @@ function Dashboard() {
                       <p className="text-sm font-extrabold text-slate-700">
                         {activity.title}
                       </p>
-
                       <p className="mt-1 truncate text-xs text-slate-400">
                         {activity.description}
                       </p>
-
                       <p className="mt-1 text-[10px] text-slate-400">
                         {formatDate(activity.date)}
                       </p>
@@ -1042,22 +901,17 @@ function Dashboard() {
                     <span className="shrink-0 text-xs font-extrabold text-slate-600">
                       {activity.amount}
                     </span>
-
                   </div>
                 ))
               )}
-
             </div>
           </div>
 
           {/* ROLE INFORMATION */}
-
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
-
             <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-50 blur-2xl" />
 
             <div className="relative">
-
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700">
                 ♙
               </div>
@@ -1075,33 +929,26 @@ function Dashboard() {
               </p>
 
               <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 p-4">
-
                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                   Signed in as
                 </p>
-
                 <p className="mt-2 break-words text-sm font-extrabold text-slate-700">
                   {user?.username || firstName}
                 </p>
-
                 <p className="mt-1 break-words text-xs font-medium text-slate-400">
                   {role}
                 </p>
-
               </div>
             </div>
           </div>
-
         </section>
 
         {/* FOOTER */}
-
         <footer className="border-t border-slate-200/70 pb-3 pt-5 text-center text-xs font-medium text-slate-400">
           SMLNEXGEN · Microfinance Management System
           <span className="mx-1.5 sm:mx-2">•</span>
           Secure workspace
         </footer>
-
       </main>
     </div>
   );
