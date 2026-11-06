@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -99,10 +98,9 @@ function getCustomerName(item) {
   return (
     item.customer_name ||
     item.customer?.full_name ||
-    [
-      item.customer?.first_name,
-      item.customer?.last_name,
-    ].filter(Boolean).join(" ") ||
+    [item.customer?.first_name, item.customer?.last_name]
+      .filter(Boolean)
+      .join(" ") ||
     item.group_name ||
     "Customer"
   );
@@ -114,10 +112,8 @@ function getStatus(item) {
 
 function getGreeting() {
   const hour = new Date().getHours();
-
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
-
   return "Good evening";
 }
 
@@ -174,10 +170,8 @@ const cardColors = {
 
 function SummaryCard({ config, value, loading }) {
   return (
-    <div className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-md sm:p-5">
-
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5">
       <div className="flex items-start justify-between gap-3">
-
         <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">
             {config.title}
@@ -192,18 +186,16 @@ function SummaryCard({ config, value, loading }) {
           )}
         </div>
 
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-bold ${cardColors[config.color]}`}>
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-bold ${cardColors[config.color]}`}
+        >
           {config.icon}
         </div>
-
       </div>
 
       <div className="mt-4 border-t border-slate-100 pt-3">
-        <p className="text-[11px] text-slate-400">
-          {config.subtitle}
-        </p>
+        <p className="text-[11px] text-slate-400">{config.subtitle}</p>
       </div>
-
     </div>
   );
 }
@@ -215,21 +207,15 @@ function SummaryCard({ config, value, loading }) {
 function SectionHeading({ title, subtitle, action }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-
       <div>
         <h2 className="text-base font-extrabold text-[#17365D] sm:text-lg">
           {title}
         </h2>
-
         {subtitle && (
-          <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-            {subtitle}
-          </p>
+          <p className="mt-1 text-xs text-slate-400 sm:text-sm">{subtitle}</p>
         )}
       </div>
-
       {action}
-
     </div>
   );
 }
@@ -239,16 +225,12 @@ function SectionHeading({ title, subtitle, action }) {
 // ==================================================
 
 function CollectionProgress({ collected, due, loading }) {
-  // Remaining scheduled amount + collected amount
   const target = collected + due;
-
-  const percentage = target > 0
-    ? Math.min(100, (collected / target) * 100)
-    : 0;
+  const percentage =
+    target > 0 ? Math.min(100, (collected / target) * 100) : 0;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Today's collection performance"
         subtitle="Collection progress against today's scheduled dues"
@@ -260,27 +242,19 @@ function CollectionProgress({ collected, due, loading }) {
       />
 
       <div className="mt-6 grid grid-cols-2 gap-4">
-
         <div>
-          <p className="text-xs font-medium text-slate-400">
-            Collected amount
-          </p>
-
+          <p className="text-xs font-medium text-slate-400">Collected amount</p>
           <h3 className="mt-2 text-xl font-extrabold text-emerald-700">
             {loading ? "..." : formatINR(collected)}
           </h3>
         </div>
 
         <div className="text-right">
-          <p className="text-xs font-medium text-slate-400">
-            Remaining due
-          </p>
-
+          <p className="text-xs font-medium text-slate-400">Remaining due</p>
           <h3 className="mt-2 text-xl font-extrabold text-orange-600">
             {loading ? "..." : formatINR(due)}
           </h3>
         </div>
-
       </div>
 
       <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
@@ -298,31 +272,25 @@ function CollectionProgress({ collected, due, loading }) {
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
-
         <div className="rounded-xl bg-emerald-50 p-3">
-          <p className="text-[11px] font-medium text-emerald-700">
-            Received
-          </p>
+          <p className="text-[11px] font-medium text-emerald-700">Received</p>
           <p className="mt-1 text-sm font-extrabold text-emerald-800">
             {loading ? "..." : formatCompactINR(collected)}
           </p>
         </div>
 
         <div className="rounded-xl bg-orange-50 p-3">
-          <p className="text-[11px] font-medium text-orange-700">
-            Pending
-          </p>
+          <p className="text-[11px] font-medium text-orange-700">Pending</p>
           <p className="mt-1 text-sm font-extrabold text-orange-800">
             {loading ? "..." : formatCompactINR(due)}
           </p>
         </div>
-
       </div>
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        Progress is calculated using collected amount and remaining scheduled dues returned by the current APIs.
+        Progress is calculated using collected amount and remaining scheduled
+        dues returned by the current APIs.
       </p>
-
     </div>
   );
 }
@@ -340,9 +308,7 @@ function CollectionChart({ payments, loading }) {
 
       const amount = payments.reduce((sum, payment) => {
         const paymentDate = new Date(
-          payment.payment_date ||
-          payment.created_at ||
-          payment.date
+          payment.payment_date || payment.created_at || payment.date
         );
 
         if (Number.isNaN(paymentDate.getTime())) return sum;
@@ -358,24 +324,17 @@ function CollectionChart({ payments, loading }) {
       }, 0);
 
       return {
-        label: date.toLocaleDateString("en-IN", {
-          weekday: "short",
-        }),
+        label: date.toLocaleDateString("en-IN", { weekday: "short" }),
         amount,
       };
     });
   }, [payments]);
 
   const maxValue = Math.max(...data.map((item) => item.amount), 1);
-
-  const total = data.reduce(
-    (sum, item) => sum + item.amount,
-    0
-  );
+  const total = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Collection analytics"
         subtitle="Daily collections for the last 7 days"
@@ -387,30 +346,25 @@ function CollectionChart({ payments, loading }) {
       />
 
       <div className="mt-5">
-        <p className="text-xs text-slate-400">
-          Total collection
-        </p>
-
+        <p className="text-xs text-slate-400">Total collection</p>
         <h3 className="mt-1 text-2xl font-extrabold text-[#17365D]">
           {loading ? "Loading..." : formatINR(total)}
         </h3>
       </div>
 
       <div className="mt-6 flex h-48 items-end justify-between gap-2 border-b border-slate-100 px-1">
-
         {data.map((item, index) => {
-          const height = item.amount > 0
-            ? Math.max(7, (item.amount / maxValue) * 135)
-            : 4;
+          const height =
+            item.amount > 0
+              ? Math.max(7, (item.amount / maxValue) * 135)
+              : 4;
 
           return (
             <div
               key={index}
               className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
             >
-
               <div className="flex w-full flex-1 items-end justify-center">
-
                 <div
                   title={`${item.label}: ${formatINR(item.amount)}`}
                   className={`w-full max-w-9 rounded-t-lg transition-all duration-500 ${
@@ -418,30 +372,21 @@ function CollectionChart({ payments, loading }) {
                       ? "bg-blue-700"
                       : "bg-blue-400 hover:bg-blue-600"
                   }`}
-                  style={{
-                    height: loading ? "4px" : `${height}px`,
-                  }}
+                  style={{ height: loading ? "4px" : `${height}px` }}
                 />
-
               </div>
-
               <span className="pb-2 text-[10px] font-semibold text-slate-400">
                 {item.label}
               </span>
-
             </div>
           );
         })}
-
       </div>
 
       <div className="mt-4 flex items-center gap-2">
         <span className="h-2.5 w-2.5 rounded-sm bg-blue-600" />
-        <span className="text-xs text-slate-500">
-          Actual collections
-        </span>
+        <span className="text-xs text-slate-500">Actual collections</span>
       </div>
-
     </div>
   );
 }
@@ -462,7 +407,11 @@ function LoanOverview({ applications, loading }) {
     applications.forEach((item) => {
       const status = getStatus(item);
 
-      if (["submitted", "pending", "pending_approval", "under_review"].includes(status)) {
+      if (
+        ["submitted", "pending", "pending_approval", "under_review"].includes(
+          status
+        )
+      ) {
         counts.pending++;
       } else if (["approved", "accepted"].includes(status)) {
         counts.approved++;
@@ -509,23 +458,21 @@ function LoanOverview({ applications, loading }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Loan application overview"
         subtitle="Application status breakdown"
       />
 
       <div className="mt-6 space-y-5">
-
         {rows.map((item) => (
           <div key={item.label}>
-
             <div className="mb-2 flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-600">
                 {item.label}
               </span>
-
-              <span className={`rounded-lg px-2.5 py-1 text-xs font-extrabold ${item.bg} ${item.text}`}>
+              <span
+                className={`rounded-lg px-2.5 py-1 text-xs font-extrabold ${item.bg} ${item.text}`}
+              >
                 {loading ? "..." : item.count}
               </span>
             </div>
@@ -542,26 +489,21 @@ function LoanOverview({ applications, loading }) {
                 }}
               />
             </div>
-
           </div>
         ))}
-
       </div>
 
       <div className="mt-6 rounded-xl bg-slate-50 p-4">
-        <p className="text-xs text-slate-400">
-          Total applications received
-        </p>
-
+        <p className="text-xs text-slate-400">Total applications received</p>
         <h3 className="mt-1 text-2xl font-extrabold text-[#17365D]">
           {loading ? "..." : applications.length}
         </h3>
       </div>
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        These counts represent loan applications returned by the applications API, not all active loan accounts.
+        These counts represent loan applications returned by the applications
+        API, not all active loan accounts.
       </p>
-
     </div>
   );
 }
@@ -604,14 +546,12 @@ function QuickActions({ navigateTo }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Quick actions"
         subtitle="Frequently used operations"
       />
 
       <div className="mt-5 grid grid-cols-2 gap-3">
-
         {actions.map((action) => (
           <button
             key={action.title}
@@ -619,8 +559,9 @@ function QuickActions({ navigateTo }) {
             onClick={() => navigateTo(action.href)}
             className="group rounded-xl border border-slate-100 p-3 text-left transition hover:-translate-y-1 hover:border-blue-200 hover:bg-slate-50 hover:shadow-sm sm:p-4"
           >
-
-            <span className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl font-bold ${action.color}`}>
+            <span
+              className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl font-bold ${action.color}`}
+            >
               {action.icon}
             </span>
 
@@ -635,12 +576,9 @@ function QuickActions({ navigateTo }) {
             <span className="mt-2 block text-sm font-bold text-blue-600 transition group-hover:translate-x-1">
               →
             </span>
-
           </button>
         ))}
-
       </div>
-
     </div>
   );
 }
@@ -665,9 +603,12 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
     const applicationActivities = applications.map((application) => ({
       id: application.id || application._id,
       type: "Loan application",
-      name: application.group_name || application.customer_name || "Group loan",
+      name:
+        application.group_name || application.customer_name || "Group loan",
       detail: application.status || "Submitted",
-      amount: getAmount(application.approved_total || application.approved_amount),
+      amount: getAmount(
+        application.approved_total || application.approved_amount
+      ),
       date: application.submitted_at || application.created_at,
       icon: "▤",
       color: "bg-violet-50 text-violet-700",
@@ -676,15 +617,13 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
     return [...paymentActivities, ...applicationActivities]
       .sort(
         (a, b) =>
-          new Date(b.date || 0).getTime() -
-          new Date(a.date || 0).getTime()
+          new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
       )
       .slice(0, 6);
   }, [payments, applications]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Recent transactions"
         subtitle="Latest collection and loan activities"
@@ -700,7 +639,6 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
       />
 
       <div className="mt-5 divide-y divide-slate-100">
-
         {loading ? (
           <div className="py-8 text-center text-sm text-slate-400">
             Loading transactions...
@@ -721,8 +659,9 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
               key={`${activity.type}-${activity.id || index}`}
               className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
             >
-
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold ${activity.color}`}>
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold ${activity.color}`}
+              >
                 {activity.icon}
               </div>
 
@@ -730,11 +669,9 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
                 <p className="text-xs font-extrabold text-slate-700 sm:text-sm">
                   {activity.type}
                 </p>
-
                 <p className="mt-1 truncate text-xs text-slate-500">
                   {activity.name} · {activity.detail}
                 </p>
-
                 <p className="mt-1 text-[10px] text-slate-400">
                   {formatDate(activity.date)}
                 </p>
@@ -742,18 +679,13 @@ function RecentActivities({ payments, applications, loading, navigateTo }) {
 
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold text-slate-700">
-                  {activity.amount > 0
-                    ? formatINR(activity.amount)
-                    : "—"}
+                  {activity.amount > 0 ? formatINR(activity.amount) : "—"}
                 </p>
               </div>
-
             </div>
           ))
         )}
-
       </div>
-
     </div>
   );
 }
@@ -797,14 +729,12 @@ function PendingTasks({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-
       <SectionHeading
         title="Attention required"
         subtitle="Tasks to monitor today"
       />
 
       <div className="mt-5 space-y-3">
-
         {tasks.map((task) => (
           <button
             key={task.title}
@@ -812,8 +742,9 @@ function PendingTasks({
             onClick={() => navigateTo(task.href)}
             className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left transition hover:border-blue-200 hover:bg-slate-50"
           >
-
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-extrabold ${task.color}`}>
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-extrabold ${task.color}`}
+            >
               {task.icon}
             </div>
 
@@ -821,7 +752,6 @@ function PendingTasks({
               <p className="text-xs font-extrabold text-slate-700">
                 {task.title}
               </p>
-
               <p className="mt-1 text-[10px] leading-4 text-slate-400">
                 {task.description}
               </p>
@@ -832,12 +762,9 @@ function PendingTasks({
             </span>
 
             <span className="text-slate-300">›</span>
-
           </button>
         ))}
-
       </div>
-
     </div>
   );
 }
@@ -868,7 +795,6 @@ function Dashboard() {
   });
 
   // USER
-
   const role = user?.profile?.role || user?.role || "USER";
 
   const firstName =
@@ -877,14 +803,46 @@ function Dashboard() {
     user?.username ||
     "User";
 
-  // NAVIGATION
+  const rolePermissions = {
+    SUPER_ADMIN: {
+      label: "Super Administrator",
+      description:
+        "Manage customers, loans, collections, deposits, finance and user access.",
+    },
+    RD_FD_ADMIN: {
+      label: "RD & FD Administrator",
+      description:
+        "Manage recurring deposits, fixed deposits and related customer accounts.",
+    },
+    GROUP_LOAN_ADMIN: {
+      label: "Group Loan Administrator",
+      description:
+        "Manage group loan operations, repayment tracking and collections.",
+    },
+    BRANCH_MANAGER: {
+      label: "Branch Manager",
+      description:
+        "Monitor branch operations, customer accounts, loan activity and collections.",
+    },
+  };
 
+  const roleInfo = rolePermissions[role] || {
+    label: String(role)
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+    description:
+      "Your dashboard provides an overview of the features available to your account.",
+  };
+
+  const initials = String(firstName).trim().slice(0, 2).toUpperCase();
+
+  // NAVIGATION
   const navigateTo = (path) => {
     window.location.href = path;
   };
 
   // DATE
-
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "2-digit",
@@ -893,7 +851,6 @@ function Dashboard() {
   });
 
   // FETCH DATA
-
   const loadDashboard = useCallback(async (showRefresh = false) => {
     if (showRefresh) {
       setRefreshing(true);
@@ -905,10 +862,10 @@ function Dashboard() {
 
     try {
       const endpoints = [
-        apiRequest("/api/collections/dashboard/"),
-        apiRequest("/api/collections/today-dues/"),
-        apiRequest("/api/collections/overdue/"),
-        apiRequest("/api/collections/payments/"),
+        apiRequest("/api/collection/dashboard/"),
+        apiRequest("/api/collection/today-dues/"),
+        apiRequest("/api/collection/overdue/"),
+        apiRequest("/api/collection/payments/"),
         apiRequest("/api/group-loan/applications/"),
       ];
 
@@ -939,13 +896,9 @@ function Dashboard() {
       const paymentList = getList(payments);
       const applicationList = getList(applications);
 
-      // TODAY'S PAYMENTS
-
       const todayPayments = paymentList.filter((payment) =>
         isToday(
-          payment.payment_date ||
-          payment.created_at ||
-          payment.date
+          payment.payment_date || payment.created_at || payment.date
         )
       );
 
@@ -957,8 +910,6 @@ function Dashboard() {
             0
           );
 
-      // TODAY'S DUES
-
       const todayDue = collectionDashboard
         ? getAmount(collectionDashboard.today_due_amount)
         : dueList.reduce(
@@ -967,8 +918,6 @@ function Dashboard() {
             0
           );
 
-      // OVERDUE
-
       const overdueAmount = collectionDashboard
         ? getAmount(collectionDashboard.overdue_amount)
         : overdueList.reduce(
@@ -976,8 +925,6 @@ function Dashboard() {
               sum + getAmount(item.balance_due ?? item.total_due),
             0
           );
-
-      // PENDING APPROVALS
 
       const pendingApplications = applicationList.filter((item) =>
         [
@@ -988,8 +935,6 @@ function Dashboard() {
         ].includes(getStatus(item))
       );
 
-      // DISBURSEMENTS
-
       const disbursedApplications = applicationList.filter(
         (item) =>
           getStatus(item) === "disbursed" &&
@@ -998,10 +943,11 @@ function Dashboard() {
 
       const disbursedToday = disbursedApplications.reduce(
         (sum, item) =>
-          sum + getAmount(
+          sum +
+          getAmount(
             item.approved_total ||
-            item.approved_amount ||
-            item.disbursed_amount
+              item.approved_amount ||
+              item.disbursed_amount
           ),
         0
       );
@@ -1012,23 +958,17 @@ function Dashboard() {
         overdueAmount,
         pendingApprovals: pendingApplications.length,
         disbursedToday,
-
         dueCustomers:
           collectionDashboard?.today_due_count ?? dueList.length,
-
         overdueCustomers:
           collectionDashboard?.overdue_count ?? overdueList.length,
-
         collectionCount:
           collectionDashboard?.today_collection_count ??
           todayPayments.length,
-
         disbursedCount: disbursedApplications.length,
-
         payments: paymentList,
         applications: applicationList,
       });
-
     } catch (err) {
       console.error("Dashboard loading error:", err);
       setError(err.message || "Something went wrong.");
@@ -1043,7 +983,6 @@ function Dashboard() {
   }, [loadDashboard]);
 
   // SUMMARY DATA
-
   const summaryValues = {
     collectedToday: dashboardData.collectedToday,
     todayDue: dashboardData.todayDue,
@@ -1053,7 +992,6 @@ function Dashboard() {
   };
 
   // CSV EXPORT
-
   const exportReport = () => {
     const rows = [
       ["Metric", "Value"],
@@ -1067,9 +1005,9 @@ function Dashboard() {
 
     const csv = rows
       .map((row) =>
-        row.map((value) =>
-          `"${String(value).replaceAll('"', '""')}"`
-        ).join(",")
+        row
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(",")
       )
       .join("\r\n");
 
@@ -1092,30 +1030,71 @@ function Dashboard() {
   // ==================================================
 
   return (
-    <main className="min-h-screen w-full bg-[#F4F7FC] p-4 sm:p-6 lg:p-7">
+    <div className="min-h-screen bg-[#F4F7FC] text-slate-800 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+      {/* HEADER — desktop only */}
+      <header className="sticky top-0 z-30 hidden shrink-0 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md lg:block">
+        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-8 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
+              S
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-extrabold tracking-wide text-[#17365D]">
+                SMLNEXGEN
+              </p>
+              <p className="mt-0.5 text-[11px] font-medium text-slate-400">
+                Microfinance workspace
+              </p>
+            </div>
+          </div>
 
-      <div className="mx-auto max-w-[1700px] space-y-6">
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              aria-label="Notifications"
+              onClick={() => navigateTo("/notifications")}
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              ♧
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+            </button>
 
+            <div className="h-8 border-l border-slate-200" />
+
+            <div className="flex shrink-0 items-center gap-2.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <p className="max-w-36 truncate text-sm font-bold text-slate-800">
+                  {firstName}
+                </p>
+                <p className="max-w-40 truncate text-xs text-slate-400">
+                  {roleInfo.label}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* MAIN CONTENT */}
+      <main className="mx-auto w-full max-w-[1800px] flex-1 space-y-6 overflow-y-auto p-4 sm:p-6 lg:min-h-0 lg:space-y-7 lg:p-8">
         {/* PAGE HEADER */}
-
-        <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-
+        <section className="mt-12 flex flex-col justify-between gap-4 sm:mt-8 sm:flex-row sm:items-center lg:mt-0">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {today}
             </p>
-
             <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#17365D] sm:text-3xl">
               {getGreeting()}, {firstName} 👋
             </h1>
-
             <p className="mt-2 text-sm text-slate-500">
               Here's your financial and collection overview for today.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-
+          <div className="flex flex-wrap gap-2.5">
             <button
               type="button"
               onClick={exportReport}
@@ -1132,17 +1111,13 @@ function Dashboard() {
             >
               {refreshing ? "↻ Refreshing..." : "↻ Refresh"}
             </button>
-
           </div>
-
         </section>
 
         {/* ERROR */}
-
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
-
             <button
               type="button"
               onClick={() => loadDashboard()}
@@ -1154,16 +1129,12 @@ function Dashboard() {
         )}
 
         {/* FINANCIAL SUMMARY */}
-
         <section>
-
           <SectionHeading
             title="Financial summary"
             subtitle="Important financial indicators for your business"
           />
-
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-
             {summaryConfig.map((config) => (
               <SummaryCard
                 key={config.key}
@@ -1172,13 +1143,10 @@ function Dashboard() {
                 loading={loading}
               />
             ))}
-
           </div>
-
         </section>
 
         {/* COLLECTION PROGRESS */}
-
         <section>
           <CollectionProgress
             collected={dashboardData.collectedToday}
@@ -1188,31 +1156,24 @@ function Dashboard() {
         </section>
 
         {/* ANALYTICS */}
-
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-
           <CollectionChart
             payments={dashboardData.payments}
             loading={loading}
           />
-
           <LoanOverview
             applications={dashboardData.applications}
             loading={loading}
           />
-
         </section>
 
         {/* QUICK ACTIONS */}
-
         <section>
           <QuickActions navigateTo={navigateTo} />
         </section>
 
         {/* RECENT TRANSACTIONS + PENDING TASKS */}
-
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-
           <div className="xl:col-span-3">
             <RecentActivities
               payments={dashboardData.payments}
@@ -1221,7 +1182,6 @@ function Dashboard() {
               navigateTo={navigateTo}
             />
           </div>
-
           <div className="xl:col-span-2">
             <PendingTasks
               pendingApprovals={dashboardData.pendingApprovals}
@@ -1230,18 +1190,14 @@ function Dashboard() {
               navigateTo={navigateTo}
             />
           </div>
-
         </section>
 
         {/* FOOTER */}
-
         <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-400">
           SMLNEXGEN · Microfinance Management System · Secure Workspace
         </footer>
-
-      </div>
-
-    </main>
+      </main>
+    </div>
   );
 }
 
