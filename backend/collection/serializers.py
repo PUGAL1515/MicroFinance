@@ -11,37 +11,51 @@ from .models import CollectionFollowUp
 from .services import get_balance
 
 
+
 class TodayDueSerializer(serializers.ModelSerializer):
+    application_id = serializers.IntegerField(
+        source="installment.application_id",
+        read_only=True
+    )
+
     customer_name = serializers.CharField(
         source="membership.customer.first_name",
         read_only=True,
     )
+
     customer_mobile = serializers.CharField(
         source="membership.customer.mobile_number",
         read_only=True,
     )
+
     group_name = serializers.CharField(
         source="membership.group.name",
         read_only=True,
     )
+
     group_code = serializers.CharField(
         source="membership.group.group_code",
         read_only=True,
     )
+
     installment_number = serializers.IntegerField(
         source="installment.installment_number",
         read_only=True,
     )
+
     due_date = serializers.DateField(
         source="installment.due_date",
         read_only=True,
     )
+
     balance_due = serializers.SerializerMethodField()
 
     class Meta:
         model = GroupLoanMemberInstallment
+
         fields = [
             "id",
+            "application_id",  # IMPORTANT: Added this field
             "customer_name",
             "customer_mobile",
             "group_name",
