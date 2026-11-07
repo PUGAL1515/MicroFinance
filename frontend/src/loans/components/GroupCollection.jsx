@@ -1,8 +1,39 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+import {
+  useParams,
+  useLocation,
+} from "react-router-dom";
+
+import {
+  Users,
+  Wallet,
+  TrendingUp,
+  Clock,
+  AlertTriangle,
+  RefreshCw,
+  CalendarDays,
+  CreditCard,
+  Receipt,
+  Printer,
+  CheckCircle2,
+  XCircle,
+  FileText,
+} from "lucide-react";
+
+// --------------------------------------------------
+// CONFIGURATION
+// --------------------------------------------------
+
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || ""
+).replace(/\/$/, "");
 
 const getToken = () =>
   localStorage.getItem("access") ||
@@ -11,16 +42,27 @@ const getToken = () =>
   localStorage.getItem("token") ||
   "";
 
+const today = () => {
+  const date = new Date();
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+};
+
 const money = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-const today = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const normalizeStatus = (status) =>
+  String(status || "pending").toLowerCase().trim();
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
 
 const statusStyle = {
   paid: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -29,27 +71,83 @@ const statusStyle = {
   overdue: "border-red-200 bg-red-50 text-red-700",
 };
 
-const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
+// --------------------------------------------------
+// API HELPERS
+// --------------------------------------------------
+
+async function apiRequest(url, options = {}) {
+  const token = getToken();
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token
+        ? { Authorization: `Bearer ${token}` }
+        : {}),
+      ...options.headers,
+    },
+  });
+
+  const text = await response.text();
+
+  let result = {};
+
+  try {
+    result = text ? JSON.parse(text) : {};
+  } catch {
+    result = { detail: text };
+  }
+
+  if (!response.ok) {
+    const message =
+      result.detail ||
+      result.message ||
+      result.error ||
+      (typeof result === "object"
+        ? Object.entries(result)
+            .map(([key, value]) => {
+              const error = Array.isArray(value)
+                ? value.join(", ")
+                : typeof value === "string"
+                  ? value
+                  : JSON.stringify(value);
+
+              return `${key}: ${error}`;
+            })
+            .join("\n")
+        : "Request failed.");
+
+    throw new Error(message);
+  }
+
+  return result;
+}
+
+// --------------------------------------------------
+// REUSABLE COMPONENTS
+// --------------------------------------------------
 
 function StatusBadge({ status }) {
-  const normalized = String(status || "pending").toLowerCase();
+  const normalized = normalizeStatus(status);
+
+  const dotColor = {
+    paid: "bg-emerald-500",
+    partial: "bg-amber-500",
+    pending: "bg-blue-500",
+    overdue: "bg-red-500",
+  };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold capitalize ${
-        statusStyle[normalized] || "border-slate-200 bg-slate-100 text-slate-600"
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold capitalize ${
+        statusStyle[normalized] ||
+        "border-slate-200 bg-slate-100 text-slate-600"
       }`}
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${
-          normalized === "paid"
-            ? "bg-emerald-500"
-            : normalized === "partial"
-              ? "bg-amber-500"
-              : normalized === "overdue"
-                ? "bg-red-500"
-                : "bg-blue-500"
+          dotColor[normalized] || "bg-slate-400"
         }`}
       />
       {normalized}
@@ -57,7 +155,13 @@ function StatusBadge({ status }) {
   );
 }
 
-function SummaryCard({ title, value, color, isCount = false, icon }) {
+function SummaryCard({
+  title,
+  value,
+  color,
+  icon: Icon,
+  isCount = false,
+}) {
   const colors = {
     blue: "bg-blue-50 text-blue-700",
     green: "bg-emerald-50 text-emerald-700",
@@ -66,22 +170,27 @@ function SummaryCard({ title, value, color, isCount = false, icon }) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <span
-          className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl ${
-            colors[color]
-          }`}
+        <p className="text-sm font-medium text-slate-500">
+          {title}
+        </p>
+
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl ${colors[color]}`}
         >
-          {icon}
-        </span>
+          <Icon size={21} />
+        </div>
       </div>
-      <p className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+
+      <p className="mt-4 break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         {isCount ? value : `₹${money(value)}`}
       </p>
+
       <p className="mt-1 text-xs text-slate-400">
-        {isCount ? "Recorded transactions" : "Group loan amount"}
+        {isCount
+          ? "Recorded transactions"
+          : "Group loan amount"}
       </p>
     </div>
   );
@@ -98,57 +207,110 @@ function FormField({ label, children }) {
   );
 }
 
-function SectionHeader({ icon, title, description, action }) {
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  action,
+}) {
   return (
-    <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:px-6">
+    <div className="flex flex-col justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:px-6">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-lg text-blue-700">
-          {icon}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+          <Icon size={20} />
         </div>
+
         <div>
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
+          <h2 className="text-base font-bold text-slate-900">
+            {title}
+          </h2>
+
           <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
             {description}
           </p>
         </div>
       </div>
+
       {action}
     </div>
   );
 }
 
-export default function GroupCollection({ applicationId: propApplicationId }) {
+// --------------------------------------------------
+// MAIN COMPONENT
+// --------------------------------------------------
+
+export default function GroupCollection({
+  applicationId: propApplicationId,
+  application,
+}) {
   const params = useParams();
-  const applicationId = propApplicationId || params.applicationId;
+  const location = useLocation();
+
+  // IMPORTANT:
+  // Supports multiple route parameter names.
+  // Also supports application object and navigation state.
+
+  const applicationId =
+    propApplicationId ||
+    application?.id ||
+    application?.application_id ||
+    params.applicationId ||
+    params.id ||
+    params.pk ||
+    params.application_id ||
+    location.state?.applicationId ||
+    location.state?.application?.id ||
+    "";
+
+  // --------------------------------------------------
+  // STATES
+  // --------------------------------------------------
 
   const [data, setData] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [filter, setFilter] = useState("unpaid");
-  const [selectedInstallment, setSelectedInstallment] = useState("all");
+  const [selectedInstallment, setSelectedInstallment] =
+    useState("all");
 
   const [amounts, setAmounts] = useState({});
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [paymentDate, setPaymentDate] = useState(today());
+
+  const [paymentMethod, setPaymentMethod] =
+    useState("cash");
+
+  const [paymentDate, setPaymentDate] =
+    useState(today());
+
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [receipt, setReceipt] = useState(null);
 
-  const headers = useMemo(() => {
-    const token = getToken();
-    return {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  }, []);
+  // --------------------------------------------------
+  // ENDPOINT
+  // --------------------------------------------------
 
-  const endpoint = `${API_BASE}/api/group-loan/applications/${applicationId}/collections/`;
+  const endpoint = applicationId
+    ? `${API_BASE}/api/group-loan/applications/${encodeURIComponent(
+        applicationId
+      )}/collections/`
+    : "";
+
+  // --------------------------------------------------
+  // LOAD DATA
+  // --------------------------------------------------
 
   const loadData = useCallback(async () => {
     if (!applicationId) {
-      setError("Group Loan Application ID is missing.");
+      setError(
+        "Application ID is missing. Please open this page from the Group Loan application list."
+      );
+
+      setData(null);
       setLoading(false);
       return;
     }
@@ -157,65 +319,104 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
     setError("");
 
     try {
-      const response = await fetch(endpoint, { headers });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.detail || result.message || "Unable to load group collection.",
-        );
-      }
+      const result = await apiRequest(endpoint);
 
       setData(result);
     } catch (err) {
-      setError(err.message || "Something went wrong.");
+      console.error("Group collection load error:", err);
+
+      setError(
+        err.message || "Unable to load group collection."
+      );
+
+      setData(null);
     } finally {
       setLoading(false);
     }
-  }, [applicationId, endpoint, headers]);
+  }, [applicationId, endpoint]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const installments = data?.member_installments || [];
-  const collections = data?.collections || [];
+  // --------------------------------------------------
+  // DATA
+  // --------------------------------------------------
+
+  const installments = useMemo(
+    () => data?.member_installments || [],
+    [data]
+  );
+
+  const collections = useMemo(
+    () => data?.collections || [],
+    [data]
+  );
+
+  // --------------------------------------------------
+  // INSTALLMENT NUMBERS
+  // --------------------------------------------------
 
   const installmentNumbers = useMemo(() => {
     return [
-      ...new Set(installments.map((item) => item.installment_number)),
-    ].sort((a, b) => a - b);
+      ...new Set(
+        installments.map(
+          (item) => item.installment_number
+        )
+      ),
+    ].sort((a, b) => Number(a) - Number(b));
   }, [installments]);
+
+  // --------------------------------------------------
+  // FILTER
+  // --------------------------------------------------
 
   const filteredInstallments = useMemo(() => {
     return installments.filter((item) => {
-      const statusMatch =
-        filter === "all" ||
-        (filter === "unpaid" && item.status !== "paid") ||
-        item.status === filter;
+      const status = normalizeStatus(item.status);
+
+      let statusMatch = true;
+
+      if (filter === "unpaid") {
+        statusMatch = status !== "paid";
+      } else if (filter !== "all") {
+        statusMatch = status === filter;
+      }
 
       const installmentMatch =
         selectedInstallment === "all" ||
-        String(item.installment_number) === String(selectedInstallment);
+        String(item.installment_number) ===
+          String(selectedInstallment);
 
       return statusMatch && installmentMatch;
     });
   }, [installments, filter, selectedInstallment]);
 
+  // --------------------------------------------------
+  // SUMMARY
+  // --------------------------------------------------
+
   const totalDue = installments.reduce(
-    (sum, item) => sum + Number(item.total_due || 0),
-    0,
+    (sum, item) =>
+      sum + Number(item.total_due || 0),
+    0
   );
 
   const totalPaid = installments.reduce(
-    (sum, item) => sum + Number(item.paid_amount || 0),
-    0,
+    (sum, item) =>
+      sum + Number(item.paid_amount || 0),
+    0
   );
 
   const totalBalance = installments.reduce(
-    (sum, item) => sum + Number(item.balance_due || 0),
-    0,
+    (sum, item) =>
+      sum + Number(item.balance_due || 0),
+    0
   );
+
+  // --------------------------------------------------
+  // SELECTED COLLECTION
+  // --------------------------------------------------
 
   const selectedRows = useMemo(() => {
     return Object.entries(amounts)
@@ -227,43 +428,94 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
   }, [amounts]);
 
   const collectionTotal = selectedRows.reduce(
-    (sum, item) => sum + Number(item.amount),
-    0,
+    (sum, item) =>
+      sum + Number(item.amount),
+    0
   );
 
-  const updateAmount = (item, value) => {
-    const balance = Number(item.balance_due || 0);
-    const entered = value === "" ? "" : Math.max(0, Number(value));
+  // --------------------------------------------------
+  // UPDATE AMOUNT
+  // --------------------------------------------------
 
-    if (entered !== "" && entered > balance) {
-      setAmounts((prev) => ({ ...prev, [item.id]: balance.toFixed(2) }));
+  const updateAmount = (item, value) => {
+    const balance = Math.max(
+      0,
+      Number(item.balance_due || 0)
+    );
+
+    if (value === "") {
+      setAmounts((prev) => ({
+        ...prev,
+        [item.id]: "",
+      }));
+
       return;
     }
 
-    setAmounts((prev) => ({ ...prev, [item.id]: entered }));
+    let entered = Number(value);
+
+    if (!Number.isFinite(entered) || entered < 0) {
+      entered = 0;
+    }
+
+    if (entered > balance) {
+      entered = balance;
+    }
+
+    setAmounts((prev) => ({
+      ...prev,
+      [item.id]: entered,
+    }));
   };
 
   const selectFullBalance = (item) => {
     setAmounts((prev) => ({
       ...prev,
-      [item.id]: Number(item.balance_due).toFixed(2),
+      [item.id]: Number(
+        item.balance_due || 0
+      ).toFixed(2),
     }));
   };
 
-  const clearAmounts = () => setAmounts({});
+  const clearAmounts = () => {
+    setAmounts({});
+  };
+
+  // --------------------------------------------------
+  // SUBMIT COLLECTION
+  // --------------------------------------------------
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setError("");
     setSuccess("");
 
+    if (!applicationId) {
+      setError(
+        "Application ID is missing. Please reopen the correct group loan application."
+      );
+      return;
+    }
+
     if (!selectedRows.length) {
-      setError("Enter collection amount for at least one member.");
+      setError(
+        "Enter collection amount for at least one member."
+      );
       return;
     }
 
     if (!paymentDate) {
-      setError("Select payment date.");
+      setError("Please select payment date.");
+      return;
+    }
+
+    if (
+      selectedRows.some(
+        (item) => item.amount <= 0
+      )
+    ) {
+      setError("Collection amount must be greater than zero.");
       return;
     }
 
@@ -274,55 +526,65 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         amount: collectionTotal.toFixed(2),
         payment_method: paymentMethod,
         payment_date: paymentDate,
-        reference,
-        notes,
+        reference: reference.trim(),
+        notes: notes.trim(),
         allocations: selectedRows,
       };
 
-      const response = await fetch(endpoint, {
+      console.log(
+        "Group collection application ID:",
+        applicationId
+      );
+
+      console.log(
+        "Group collection payload:",
+        payload
+      );
+
+      const result = await apiRequest(endpoint, {
         method: "POST",
-        headers,
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        const message =
-          typeof result === "object"
-            ? Object.entries(result)
-                .map(
-                  ([key, value]) =>
-                    `${key}: ${Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value)}`,
-                )
-                .join("\n")
-            : "Collection failed.";
-
-        throw new Error(message || "Collection failed.");
-      }
-
       setReceipt(result.receipt || result);
-      setSuccess("Group collection saved successfully.");
+
+      setSuccess(
+        "Group collection saved successfully."
+      );
+
       setAmounts({});
       setReference("");
       setNotes("");
 
       await loadData();
     } catch (err) {
-      setError(err.message || "Unable to save collection.");
+      console.error("Collection save error:", err);
+
+      setError(
+        err.message || "Unable to save collection."
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  // --------------------------------------------------
+  // PRINT RECEIPT
+  // --------------------------------------------------
+
   const printReceipt = () => {
     window.print();
   };
+
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
 
   if (loading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <div className="h-11 w-11 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
+
         <p className="text-sm font-medium text-slate-500">
           Loading group collection...
         </p>
@@ -330,23 +592,32 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
     );
   }
 
+  // --------------------------------------------------
+  // ERROR WITHOUT DATA
+  // --------------------------------------------------
+
   if (error && !data) {
     return (
       <div className="flex min-h-[55vh] items-center justify-center p-4">
         <div className="w-full max-w-lg rounded-2xl border border-red-200 bg-white p-7 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">
-            ⚠️
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <AlertTriangle size={28} />
           </div>
+
           <h2 className="mt-4 text-lg font-bold text-slate-900">
             Unable to Load Group Collection
           </h2>
+
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-red-600">
             {error}
           </p>
+
           <button
+            type="button"
             onClick={loadData}
-            className="mt-5 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
           >
+            <RefreshCw size={16} />
             Try Again
           </button>
         </div>
@@ -354,10 +625,16 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
     );
   }
 
+  // --------------------------------------------------
+  // MAIN UI
+  // --------------------------------------------------
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-8">
-      {/* Page Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-700 p-5 text-white shadow-lg shadow-blue-900/10 sm:p-7">
+
+      {/* HEADER */}
+
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-700 p-5 text-white shadow-lg sm:p-7">
         <div className="relative z-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100">
@@ -370,18 +647,22 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
             </h1>
 
             <p className="mt-2 text-sm text-blue-100">
-              {data?.group_name || "Group"} · Application #{applicationId}
+              {data?.group_name || "Group"} · Application #
+              {applicationId || "-"}
             </p>
+
             <p className="mt-1 text-xs text-blue-200">
               Manage member-wise EMI payments and collection records.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={loadData}
+            disabled={loading}
             className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20 sm:self-center"
           >
-            <span className="text-lg">↻</span>
+            <RefreshCw size={17} />
             Refresh Data
           </button>
         </div>
@@ -390,79 +671,99 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         <div className="pointer-events-none absolute -bottom-28 right-28 h-48 w-48 rounded-full bg-blue-400/10 blur-2xl" />
       </div>
 
-      {/* Alerts */}
+      {/* ALERTS */}
+
       {error && (
         <div className="flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <div className="flex items-start gap-2">
-            <span className="text-base">⚠️</span>
-            <p className="whitespace-pre-wrap leading-6">{error}</p>
+            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+            <p className="whitespace-pre-wrap leading-6">
+              {error}
+            </p>
           </div>
+
           <button
             type="button"
             onClick={() => setError("")}
             className="shrink-0 rounded-lg px-2 py-1 font-bold hover:bg-red-100"
           >
-            ✕
+            <XCircle size={18} />
           </button>
         </div>
       )}
 
       {success && (
         <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100">
-            ✓
-          </span>
+          <CheckCircle2 size={22} />
           {success}
         </div>
       )}
 
-      {/* Summary Cards */}
+      {/* SUMMARY CARDS */}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           title="Total EMI Due"
           value={totalDue}
           color="blue"
-          icon="📋"
+          icon={FileText}
         />
+
         <SummaryCard
           title="Total Collected"
           value={totalPaid}
           color="green"
-          icon="✓"
+          icon={TrendingUp}
         />
+
         <SummaryCard
           title="Outstanding Balance"
           value={totalBalance}
           color="red"
-          icon="₹"
+          icon={AlertTriangle}
         />
+
         <SummaryCard
           title="Collection Entries"
           value={collections.length}
           color="purple"
-          icon="📁"
+          icon={Receipt}
           isCount
         />
       </div>
 
-      {/* Collection Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Member-wise EMI */}
+      {/* COLLECTION FORM */}
+
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
+
+        {/* MEMBER EMI DETAILS */}
+
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            icon="👥"
+            icon={Users}
             title="Member-wise EMI Details"
             description="Review outstanding installments and enter collection amounts for each member."
             action={
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <select
                   value={selectedInstallment}
-                  onChange={(e) => setSelectedInstallment(e.target.value)}
+                  onChange={(e) =>
+                    setSelectedInstallment(e.target.value)
+                  }
                   className={inputClass}
                 >
-                  <option value="all">All Installments</option>
+                  <option value="all">
+                    All Installments
+                  </option>
+
                   {installmentNumbers.map((number) => (
-                    <option key={number} value={number}>
+                    <option
+                      key={number}
+                      value={number}
+                    >
                       EMI {number}
                     </option>
                   ))}
@@ -470,10 +771,14 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
                 <select
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
+                  onChange={(e) =>
+                    setFilter(e.target.value)
+                  }
                   className={inputClass}
                 >
-                  <option value="unpaid">Pending + Partial + Overdue</option>
+                  <option value="unpaid">
+                    Pending + Partial + Overdue
+                  </option>
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="partial">Partial</option>
@@ -500,82 +805,95 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {filteredInstallments.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="transition hover:bg-blue-50/30"
-                  >
-                    <td className="px-5 py-4">
-                      <p className="font-semibold text-slate-800">
-                        {item.customer_name}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {item.mobile_number ||
-                          `Customer #${item.customer_id}`}
-                      </p>
-                    </td>
+                {filteredInstallments.map((item) => {
+                  const balance = Number(item.balance_due || 0);
 
-                    <td className="px-5 py-4 font-semibold text-slate-700">
-                      EMI {item.installment_number}
-                    </td>
+                  return (
+                    <tr
+                      key={item.id}
+                      className="transition hover:bg-blue-50/30"
+                    >
+                      <td className="px-5 py-4">
+                        <p className="font-semibold text-slate-800">
+                          {item.customer_name || "Unknown Member"}
+                        </p>
 
-                    <td className="px-5 py-4 whitespace-nowrap text-slate-600">
-                      {item.due_date}
-                    </td>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {item.mobile_number ||
+                            `Customer #${item.customer_id || "-"}`}
+                        </p>
+                      </td>
 
-                    <td className="px-5 py-4 text-right font-medium tabular-nums text-slate-700">
-                      ₹{money(item.total_due)}
-                    </td>
+                      <td className="px-5 py-4 font-semibold text-slate-700">
+                        EMI {item.installment_number}
+                      </td>
 
-                    <td className="px-5 py-4 text-right font-medium tabular-nums text-emerald-700">
-                      ₹{money(item.paid_amount)}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600">
+                        {item.due_date || "-"}
+                      </td>
 
-                    <td className="px-5 py-4 text-right font-bold tabular-nums text-red-600">
-                      ₹{money(item.balance_due)}
-                    </td>
+                      <td className="px-5 py-4 text-right font-medium tabular-nums text-slate-700">
+                        ₹{money(item.total_due)}
+                      </td>
 
-                    <td className="px-5 py-4">
-                      <StatusBadge status={item.status} />
-                    </td>
+                      <td className="px-5 py-4 text-right font-medium tabular-nums text-emerald-700">
+                        ₹{money(item.paid_amount)}
+                      </td>
 
-                    <td className="px-5 py-4">
-                      {Number(item.balance_due) > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                              ₹
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              max={item.balance_due}
-                              step="0.01"
-                              value={amounts[item.id] ?? ""}
-                              onChange={(e) =>
-                                updateAmount(item, e.target.value)
+                      <td className="px-5 py-4 text-right font-bold tabular-nums text-red-600">
+                        ₹{money(balance)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <StatusBadge status={item.status} />
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {balance > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                                ₹
+                              </span>
+
+                              <input
+                                type="number"
+                                min="0"
+                                max={balance}
+                                step="0.01"
+                                value={amounts[item.id] ?? ""}
+                                onChange={(e) =>
+                                  updateAmount(
+                                    item,
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Amount"
+                                className="w-28 rounded-xl border border-slate-200 py-2.5 pl-6 pr-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                selectFullBalance(item)
                               }
-                              placeholder="Amount"
-                              className="w-28 rounded-xl border border-slate-200 py-2.5 pl-6 pr-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50"
-                            />
+                              title="Collect full balance"
+                              className="rounded-lg bg-blue-50 px-3 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                            >
+                              Full
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => selectFullBalance(item)}
-                            title="Collect full balance"
-                            className="rounded-lg bg-blue-50 px-3 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                          >
-                            Full
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                          ✓ Fully Paid
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                            <CheckCircle2 size={15} />
+                            Fully Paid
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {!filteredInstallments.length && (
                   <tr>
@@ -583,12 +901,15 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
                       colSpan="8"
                       className="px-5 py-16 text-center text-slate-500"
                     >
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xl">
-                        📋
-                      </div>
+                      <FileText
+                        size={35}
+                        className="mx-auto text-slate-300"
+                      />
+
                       <p className="mt-3 font-semibold text-slate-700">
                         No Installments Found
                       </p>
+
                       <p className="mt-1 text-xs">
                         No member installments match the selected filters.
                       </p>
@@ -604,6 +925,7 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               <p className="text-sm font-semibold text-slate-700">
                 {selectedRows.length} member installment(s) selected
               </p>
+
               <p className="mt-1 text-xs text-slate-500">
                 Selected collection amount: ₹{money(collectionTotal)}
               </p>
@@ -619,15 +941,20 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
           </div>
         </section>
 
-        {/* Payment Details */}
+        {/* PAYMENT DETAILS */}
+
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:col-span-2">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-xl">
-                💳
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                <CreditCard size={21} />
               </div>
+
               <div>
-                <h2 className="font-bold text-slate-900">Payment Details</h2>
+                <h2 className="font-bold text-slate-900">
+                  Payment Details
+                </h2>
+
                 <p className="mt-1 text-xs text-slate-500">
                   Enter the payment information for this collection.
                 </p>
@@ -638,7 +965,9 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               <FormField label="Payment Method">
                 <select
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value)
+                  }
                   className={inputClass}
                 >
                   <option value="cash">Cash</option>
@@ -652,7 +981,10 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
                 <input
                   type="date"
                   value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
+                  max={today()}
+                  onChange={(e) =>
+                    setPaymentDate(e.target.value)
+                  }
                   className={inputClass}
                 />
               </FormField>
@@ -660,7 +992,9 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               <FormField label="Transaction Reference">
                 <input
                   value={reference}
-                  onChange={(e) => setReference(e.target.value)}
+                  onChange={(e) =>
+                    setReference(e.target.value)
+                  }
                   placeholder="UPI / Bank transaction ID"
                   className={inputClass}
                 />
@@ -669,7 +1003,9 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               <FormField label="Notes">
                 <input
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) =>
+                    setNotes(e.target.value)
+                  }
                   placeholder="Optional collection notes"
                   className={inputClass}
                 />
@@ -677,16 +1013,16 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
             </div>
           </section>
 
-          {/* Collection Total */}
-          <section className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-blue-950 to-blue-700 p-5 text-white shadow-lg shadow-blue-900/10 sm:p-6">
+          {/* COLLECTION TOTAL */}
+
+          <section className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-blue-950 to-blue-700 p-5 text-white shadow-lg sm:p-6">
             <div className="relative z-10">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-blue-100">
                   Total Collection Amount
                 </p>
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-xl">
-                  ₹
-                </span>
+
+                <Wallet size={23} />
               </div>
 
               <p className="mt-4 break-all text-3xl font-bold tracking-tight sm:text-4xl">
@@ -699,18 +1035,33 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
               <div className="mt-6 space-y-3 border-t border-white/15 pt-5 text-sm">
                 <div className="flex justify-between gap-3">
-                  <span className="text-blue-100">Selected members</span>
-                  <span className="font-bold">{selectedRows.length}</span>
+                  <span className="text-blue-100">
+                    Selected installments
+                  </span>
+
+                  <span className="font-bold">
+                    {selectedRows.length}
+                  </span>
                 </div>
+
                 <div className="flex justify-between gap-3">
-                  <span className="text-blue-100">Payment method</span>
+                  <span className="text-blue-100">
+                    Payment method
+                  </span>
+
                   <span className="font-bold uppercase">
                     {paymentMethod}
                   </span>
                 </div>
+
                 <div className="flex justify-between gap-3">
-                  <span className="text-blue-100">Payment date</span>
-                  <span className="font-bold">{paymentDate}</span>
+                  <span className="text-blue-100">
+                    Payment date
+                  </span>
+
+                  <span className="font-bold">
+                    {paymentDate}
+                  </span>
                 </div>
               </div>
             </div>
@@ -726,7 +1077,10 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
                   Saving Collection...
                 </>
               ) : (
-                <>✓ Save Group Collection</>
+                <>
+                  <CheckCircle2 size={18} />
+                  Save Group Collection
+                </>
               )}
             </button>
 
@@ -735,10 +1089,11 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         </div>
       </form>
 
-      {/* Collection History */}
+      {/* COLLECTION HISTORY */}
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <SectionHeader
-          icon="📚"
+          icon={Receipt}
           title="Collection History"
           description="Previously recorded group collections and receipts."
         />
@@ -757,21 +1112,28 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
 
             <tbody className="divide-y divide-slate-100">
               {collections.map((item) => (
-                <tr key={item.id} className="transition hover:bg-slate-50">
+                <tr
+                  key={item.id}
+                  className="transition hover:bg-slate-50"
+                >
                   <td className="px-5 py-4 font-bold text-blue-700">
-                    {item.receipt_number}
+                    {item.receipt_number || "-"}
                   </td>
+
                   <td className="whitespace-nowrap px-5 py-4 text-slate-600">
-                    {item.payment_date}
+                    {item.payment_date || "-"}
                   </td>
+
                   <td className="px-5 py-4">
                     <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-700">
-                      {item.payment_method}
+                      {item.payment_method || "-"}
                     </span>
                   </td>
+
                   <td className="px-5 py-4 text-slate-600">
                     {item.reference || "-"}
                   </td>
+
                   <td className="px-5 py-4 text-right font-bold tabular-nums text-emerald-700">
                     ₹{money(item.amount)}
                   </td>
@@ -784,12 +1146,15 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
                     colSpan="5"
                     className="px-5 py-14 text-center text-slate-500"
                   >
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xl">
-                      📁
-                    </div>
+                    <Receipt
+                      size={35}
+                      className="mx-auto text-slate-300"
+                    />
+
                     <p className="mt-3 font-semibold text-slate-700">
                       No Collection Entries
                     </p>
+
                     <p className="mt-1 text-xs">
                       Recorded group collections will appear here.
                     </p>
@@ -801,21 +1166,25 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
         </div>
       </section>
 
-      {/* Receipt */}
+      {/* RECEIPT */}
+
       {receipt && (
         <section className="print-receipt overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
           <div className="flex flex-col justify-between gap-4 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:p-6">
             <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-2xl text-emerald-700">
-                ✓
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <CheckCircle2 size={27} />
               </div>
+
               <div>
                 <h3 className="font-bold text-emerald-900">
                   Collection Saved Successfully
                 </h3>
+
                 <p className="mt-1 text-sm text-emerald-700">
                   Receipt: {receipt.receipt_number || "-"}
                 </p>
+
                 <p className="mt-1 text-sm font-bold text-emerald-800">
                   Amount: ₹{money(receipt.amount)}
                 </p>
@@ -827,21 +1196,26 @@ export default function GroupCollection({ applicationId: propApplicationId }) {
               onClick={printReceipt}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
             >
-              🖨 Print Receipt
+              <Printer size={18} />
+              Print Receipt
             </button>
           </div>
         </section>
       )}
+
+      {/* PRINT CSS */}
 
       <style>{`
         @media print {
           body * {
             visibility: hidden;
           }
+
           .print-receipt,
           .print-receipt * {
             visibility: visible;
           }
+
           .print-receipt {
             position: absolute;
             left: 0;

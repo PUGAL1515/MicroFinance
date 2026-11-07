@@ -1,4 +1,3 @@
-
 import {
   Wallet,
   TrendingUp,
@@ -18,7 +17,7 @@ const CollectionStats = ({ data = {} }) => {
       title: "Today's Due",
       value: formatCurrency(data.today_due_amount),
       description: "Total amount scheduled today",
-      icon: CalendarIcon,
+      icon: Wallet,
       color: "blue",
     },
     {
@@ -44,17 +43,17 @@ const CollectionStats = ({ data = {} }) => {
     },
   ];
 
+  const themes = {
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    amber: "bg-amber-50 text-amber-600",
+    rose: "bg-rose-50 text-rose-600",
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((item, index) => {
         const Icon = item.icon;
-
-        const themes = {
-          blue: "bg-blue-50 text-blue-600",
-          emerald: "bg-emerald-50 text-emerald-600",
-          amber: "bg-amber-50 text-amber-600",
-          rose: "bg-rose-50 text-rose-600",
-        };
 
         return (
           <div
@@ -89,9 +88,5 @@ const CollectionStats = ({ data = {} }) => {
     </div>
   );
 };
-
-function CalendarIcon(props) {
-  return <Wallet {...props} />;
-}
 
 export default CollectionStats;
