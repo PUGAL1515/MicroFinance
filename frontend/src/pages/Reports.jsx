@@ -22,10 +22,6 @@ import {
 
 import collectionApi from "../services/collectionApi";
 
-// --------------------------------------------------
-// HELPERS
-// --------------------------------------------------
-
 const getList = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.results)) return data.results;
@@ -54,9 +50,7 @@ const getCustomer = (item) => {
     item?.loan?.customer ||
     item?.loan?.application?.customer ||
     {};
-
   if (typeof customer === "string") return customer;
-
   return (
     item?.customer_name ||
     customer?.full_name ||
@@ -69,7 +63,6 @@ const getCustomer = (item) => {
     "Unknown Customer"
   );
 };
-
 const getPaymentDate = (item) =>
   item?.payment_date ||
   item?.collected_at ||
@@ -77,7 +70,6 @@ const getPaymentDate = (item) =>
   item?.created_at ||
   item?.date ||
   "";
-
 const getPaymentMode = (item) =>
   String(
     item?.payment_mode ||
@@ -93,42 +85,31 @@ const formatMoney = (value) =>
     currency: "INR",
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
-
 const formatDate = (value) => {
   if (!value) return "—";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return value;
-
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 };
-
 const today = () => {
   const date = new Date();
   return new Date(
     date.getTime() - date.getTimezoneOffset() * 60000
   ).toISOString().slice(0, 10);
 };
-
 const getStatus = (item) =>
   String(item?.status || item?.payment_status || "completed").toLowerCase();
-
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
-
 const isSuccessful = (item) =>
   !["failed", "cancelled", "rejected", "pending"].includes(
     getStatus(item)
   );
 
-// --------------------------------------------------
-// STAT CARD
-// --------------------------------------------------
 
 function StatCard({ title, value, subtitle, icon: Icon, color }) {
   const styles = {
@@ -138,34 +119,25 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
     red: "bg-rose-50 text-rose-700",
     violet: "bg-violet-50 text-violet-700",
   };
-
   return (
     <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-slate-500">
           {title}
         </p>
-
         <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${styles[color]}`}>
           <Icon size={21} />
         </div>
       </div>
-
       <h3 className="mt-4 break-words text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
         {value}
       </h3>
-
       <p className="mt-2 text-xs text-slate-500">
         {subtitle}
       </p>
     </div>
   );
 }
-
-// --------------------------------------------------
-// SECTION CARD
-// --------------------------------------------------
-
 function SectionCard({ title, subtitle, children, action }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -185,57 +157,40 @@ function SectionCard({ title, subtitle, children, action }) {
     </section>
   );
 }
-
-// --------------------------------------------------
-// EMPTY STATE
-// --------------------------------------------------
-
 function EmptyState() {
   return (
     <div className="px-5 py-14 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
         <Receipt size={27} />
       </div>
-
       <h3 className="mt-4 font-bold text-slate-800">
         No collection records found
       </h3>
-
       <p className="mt-2 text-sm text-slate-500">
         Try changing the date filter or search criteria.
       </p>
     </div>
   );
 }
-
-// --------------------------------------------------
-// MAIN REPORTS PAGE
-// --------------------------------------------------
-
 export default function Reports() {
   const [dashboard, setDashboard] = useState({});
   const [payments, setPayments] = useState([]);
   const [dues, setDues] = useState([]);
   const [overdue, setOverdue] = useState([]);
   const [followUps, setFollowUps] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
   const [paymentMode, setPaymentMode] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [period, setPeriod] = useState("all");
-
   // -----------------------------------------------
   // LOAD API DATA
   // -----------------------------------------------
-
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
-
     try {
       const results = await Promise.allSettled([
         collectionApi.dashboard(),
@@ -244,48 +199,40 @@ export default function Reports() {
         collectionApi.overdue(),
         collectionApi.followUps(),
       ]);
-
       const errors = [];
-
       if (results[0].status === "fulfilled") {
         setDashboard(results[0].value || {});
       } else {
         setDashboard({});
         errors.push("Dashboard data unavailable.");
       }
-
       if (results[1].status === "fulfilled") {
         setPayments(getList(results[1].value));
       } else {
         setPayments([]);
         errors.push("Payment history unavailable.");
       }
-
       if (results[2].status === "fulfilled") {
         setDues(getList(results[2].value));
       } else {
         setDues([]);
         errors.push("Today's dues unavailable.");
       }
-
       if (results[3].status === "fulfilled") {
         setOverdue(getList(results[3].value));
       } else {
         setOverdue([]);
         errors.push("Overdue information unavailable.");
       }
-
       if (results[4].status === "fulfilled") {
         setFollowUps(getList(results[4].value));
       } else {
         setFollowUps([]);
         errors.push("Follow-up information unavailable.");
       }
-
       if (errors.length === 5) {
         throw new Error("Unable to load collection reports. Please check your API.");
       }
-
       if (errors.length) {
         setError(errors.join(" "));
       }
@@ -295,27 +242,21 @@ export default function Reports() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   // -----------------------------------------------
   // DATE FILTER
   // -----------------------------------------------
-
   const handlePeriod = (value) => {
     setPeriod(value);
-
     const end = today();
     const start = new Date();
-
     if (value === "all") {
       setDateFrom("");
       setDateTo("");
       return;
     }
-
     if (value === "today") {
       setDateFrom(end);
       setDateTo(end);
@@ -341,7 +282,6 @@ export default function Reports() {
         new Date().getMonth(),
         1
       );
-
       setDateFrom(
         new Date(first.getTime() - first.getTimezoneOffset() * 60000)
           .toISOString()
@@ -350,18 +290,14 @@ export default function Reports() {
       setDateTo(end);
     }
   };
-
   // -----------------------------------------------
   // FILTER PAYMENTS
   // -----------------------------------------------
-
   const filteredPayments = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return payments.filter((item) => {
       const date = getPaymentDate(item);
       const dateValue = date ? String(date).slice(0, 10) : "";
-
       const matchesSearch =
         !query ||
         [
@@ -375,14 +311,11 @@ export default function Reports() {
           .join(" ")
           .toLowerCase()
           .includes(query);
-
       const matchesMode =
         paymentMode === "all" ||
         getPaymentMode(item).toLowerCase() === paymentMode;
-
       const matchesFrom = !dateFrom || dateValue >= dateFrom;
       const matchesTo = !dateTo || dateValue <= dateTo;
-
       return (
         matchesSearch &&
         matchesMode &&
@@ -391,16 +324,13 @@ export default function Reports() {
       );
     });
   }, [payments, search, paymentMode, dateFrom, dateTo]);
-
   // -----------------------------------------------
   // CALCULATIONS
   // -----------------------------------------------
-
   const successfulPayments = useMemo(
     () => filteredPayments.filter(isSuccessful),
     [filteredPayments]
   );
-
   const totalCollected = useMemo(
     () =>
       successfulPayments.reduce(
@@ -409,7 +339,6 @@ export default function Reports() {
       ),
     [successfulPayments]
   );
-
   const totalDue = useMemo(
     () => dues.reduce((sum, item) => {
       const due = Number(
@@ -423,7 +352,6 @@ export default function Reports() {
     }, 0),
     [dues]
   );
-
   const totalOverdue = useMemo(
     () => overdue.reduce((sum, item) => {
       const due = Number(
@@ -433,14 +361,11 @@ export default function Reports() {
         item.total_due ??
         0
       );
-
       const paid = Number(item.paid_amount ?? item.amount_paid ?? 0);
-
       return sum + Math.max(0, due - paid);
     }, 0),
     [overdue]
   );
-
   const uniqueCustomers = useMemo(
     () =>
       new Set(
