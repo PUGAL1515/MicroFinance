@@ -285,14 +285,16 @@ const FD = () => {
     <div className="min-h-screen bg-[#F4F7FC] text-slate-800">
       {/* Toast */}
       {toast && (
-        <div className="fixed right-4 top-6 z-[100] sm:right-6">
-          <div
-            className={`flex min-w-[280px] max-w-md items-center gap-3 rounded-2xl border px-5 py-4 shadow-xl ${
-              toast.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-red-200 bg-red-50 text-red-800"
-            }`}
-          >
+        
+<div className="fixed right-4 top-6 z-100 sm:right-6">
+  <div
+    className={`flex min-w-70 max-w-md items-center gap-3 rounded-2xl border px-5 py-4 shadow-xl ${
+      toast.type === "success"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+        : "border-red-200 bg-red-50 text-red-800"
+    }`}
+  >
+
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-white ${
                 toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
@@ -351,7 +353,7 @@ const FD = () => {
                   setCustomerResults([]);
                   setShowAccountForm(true);
                 }}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800"
               >
                 <span className="text-lg">+</span>
                 Open FD Account
@@ -396,7 +398,7 @@ const FD = () => {
         {activeTab === "products" && isSuperAdmin && (
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-225 text-left">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80">
                     <th className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -484,7 +486,7 @@ const FD = () => {
         {activeTab === "accounts" && (
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-255 text-left">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80">
                     <th className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">

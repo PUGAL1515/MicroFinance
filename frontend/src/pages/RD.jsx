@@ -257,9 +257,8 @@ const RD = () => {
     };
     return (
       <span
-        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ${
-          map[status] || "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
-        }`}
+        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ${map[status] || "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+          }`}
       >
         {status?.replaceAll("_", " ")}
       </span>
@@ -275,18 +274,18 @@ const RD = () => {
     <div className="min-h-screen bg-[#F4F7FC] text-slate-800">
       {/* Toast */}
       {toast && (
-        <div className="fixed right-4 top-6 z-[100] sm:right-6">
+
+        <div className="fixed right-4 top-6 z-100 sm:right-6">
           <div
-            className={`flex min-w-[280px] max-w-md items-center gap-3 rounded-2xl border px-5 py-4 shadow-xl ${
-              toast.type === "success"
+            className={`flex min-w-70 max-w-md items-center gap-3 rounded-2xl border px-5 py-4 shadow-xl ${toast.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-red-200 bg-red-50 text-red-800"
-            }`}
-          >
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-white ${
-                toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
               }`}
+          >
+
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-white ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
+                }`}
             >
               {toast.type === "success" ? "✓" : "!"}
             </div>
@@ -344,7 +343,7 @@ const RD = () => {
                   setCustomerResults([]);
                   setShowAccountForm(true);
                 }}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-800"
               >
                 <span className="text-lg">+</span>
                 Open RD Account
@@ -358,11 +357,10 @@ const RD = () => {
           {isSuperAdmin && (
             <button
               onClick={() => setActiveTab("products")}
-              className={`relative px-5 py-3 text-sm font-bold transition ${
-                activeTab === "products"
+              className={`relative px-5 py-3 text-sm font-bold transition ${activeTab === "products"
                   ? "text-blue-700"
                   : "text-slate-500 hover:text-slate-700"
-              }`}
+                }`}
             >
               RD Products
               {activeTab === "products" && (
@@ -372,11 +370,10 @@ const RD = () => {
           )}
           <button
             onClick={() => setActiveTab("accounts")}
-            className={`relative px-5 py-3 text-sm font-bold transition ${
-              activeTab === "accounts"
+            className={`relative px-5 py-3 text-sm font-bold transition ${activeTab === "accounts"
                 ? "text-blue-700"
                 : "text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             RD Accounts
             {activeTab === "accounts" && (
@@ -389,7 +386,7 @@ const RD = () => {
         {activeTab === "products" && isSuperAdmin && (
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-left">
+              <table className="w-full min-w-200 text-left">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80">
                     <th className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -465,7 +462,7 @@ const RD = () => {
         {activeTab === "accounts" && (
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-225 text-left">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80">
                     <th className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -535,7 +532,7 @@ const RD = () => {
                                   100,
                                   ((acc.total_instalments_paid || 0) /
                                     (acc.tenure_months || 1)) *
-                                    100
+                                  100
                                 )}%`,
                               }}
                             />
@@ -1101,8 +1098,8 @@ const RD = () => {
                       instalment: e.target.value,
                       amount: inst
                         ? (
-                            Number(inst.amount_due) - Number(inst.amount_paid)
-                          ).toFixed(2)
+                          Number(inst.amount_due) - Number(inst.amount_paid)
+                        ).toFixed(2)
                         : "",
                     }));
                   }}

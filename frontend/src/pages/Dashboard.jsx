@@ -180,7 +180,7 @@ function SummaryCard({ config, value, loading }) {
           {loading ? (
             <div className="mt-4 h-8 w-28 animate-pulse rounded-lg bg-slate-100" />
           ) : (
-            <h3 className="mt-3 break-words text-xl font-extrabold tracking-tight text-[#17365D] sm:text-2xl">
+            <h3 className="mt-3 wrap-break-word text-xl font-extrabold tracking-tight text-[#17365D] sm:text-2xl">
               {config.isCount ? value : formatINR(value)}
             </h3>
           )}
@@ -259,7 +259,7 @@ function CollectionProgress({ collected, due, loading }) {
 
       <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-700"
+          className="h-full rounded-full bg-linear-to-r from-emerald-500 to-green-400 transition-all duration-700"
           style={{ width: `${loading ? 0 : percentage}%` }}
         />
       </div>
@@ -1033,9 +1033,9 @@ function Dashboard() {
     <div className="min-h-screen bg-[#F4F7FC] text-slate-800 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
       {/* HEADER — desktop only */}
       <header className="sticky top-0 z-30 hidden shrink-0 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md lg:block">
-        <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center justify-between gap-3 px-8 py-3">
+        <div className="mx-auto flex min-h-18 max-w-[1800px] items-center justify-between gap-3 px-8 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-blue-600 to-[#17365D] text-lg font-extrabold text-white shadow-md">
               S
             </div>
             <div className="min-w-0">
@@ -1062,7 +1062,7 @@ function Dashboard() {
             <div className="h-8 border-l border-slate-200" />
 
             <div className="flex shrink-0 items-center gap-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-linear-to-br from-[#F2D6BF] to-[#E9BFA0] text-sm font-extrabold text-[#825237] shadow-sm ring-1 ring-slate-200">
                 {initials}
               </div>
               <div className="min-w-0">
