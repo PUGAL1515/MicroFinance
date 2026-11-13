@@ -1,15 +1,16 @@
-
 from decimal import Decimal
 
 from django.db.models import Sum, Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
+from notifications.utils import notify_user
 from loans.models import (
     GroupLoanMemberInstallment,
     GroupCollection,
@@ -34,6 +35,14 @@ from .services import (
     record_field_collection,
 )
 
+User = get_user_model()
+
+
+def get_admins(roles=None):
+    if roles is None:
+        roles = ["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]
+    return User.objects.filter(profile__role__in=roles)
+
 
 class CollectionDashboardView(APIView):
     permission_classes = [AllowAny]
@@ -42,7 +51,6 @@ class CollectionDashboardView(APIView):
         today = timezone.localdate()
 
         today_dues = get_today_due_queryset()
-
         overdue = get_overdue_queryset()
 
         today_due_amount = sum(
@@ -137,6 +145,22 @@ class FieldCollectionView(APIView):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # ========== NOTIFICATION ==========
+        amount = getattr(collection, "amount", None) or ""
+        receipt = getattr(collection, "receipt_number", "")
+
+        for admin in get_admins(
+            ["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]
+        ):
+            notify_user(
+                user=admin,
+                title="Field Collection Recorded",
+                message=f"₹{amount} collected (Receipt: {receipt})",
+                level="success",
+                link="/collections",
+            )
+        # ==================================
 
         return Response(
             {
@@ -295,7 +319,20 @@ class FollowUpView(APIView):
 
         serializer.is_valid(raise_exception=True)
 
-        serializer.save(created_by=request.user)
+        follow_up = serializer.save(created_by=request.user)
+
+        # ========== NOTIFICATION ==========
+        for admin in get_admins(
+            ["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]
+        ):
+            notify_user(
+                user=admin,
+                title="Collection Follow-up Created",
+                message=f"New follow-up scheduled for {getattr(follow_up, 'follow_up_date', '')}",
+                level="info",
+                link="/collections",
+            )
+        # ==================================
 
         return Response(
             serializer.data,

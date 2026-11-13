@@ -2,19 +2,17 @@ from django.db.models import Count, Q, Sum
 from django.db import transaction
 from django.shortcuts import get_object_or_404, render
 from django.utils.dateparse import parse_date
+from django.contrib.auth import get_user_model
+
 from .models import (
     GroupLoanMemberInstallment,
     GroupCollection,
     GroupCollectionAllocation,
-    GroupLoanMemberInstallment, 
     GroupMembership,
     GroupLoanApplication,
     GroupLoanInstallment,
     GroupLoanPlan,
     LoanGroup,
-    GroupMembership,
-    GroupLoanApplication,
-    GroupLoanInstallment,
     GroupLoanPayment,
 )
 from .serializers import (
@@ -36,6 +34,17 @@ from customer.models import Customer, CustomerKYC
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
+
+from notifications.utils import notify_user
+
+User = get_user_model()
+
+
+def get_admins(roles=None):
+    if roles is None:
+        roles = ["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]
+    return User.objects.filter(profile__role__in=roles)
+
 
 class GroupLoanPlanListCreateView(generics.ListCreateAPIView):
     serializer_class = GroupLoanPlanSerializer
@@ -97,7 +106,16 @@ class LoanGroupListCreateView(generics.ListCreateAPIView):
                 {"plan": "Select an active Group Loan Plan."}
             )
 
-        serializer.save()
+        group = serializer.save()
+
+        for admin in get_admins():
+            notify_user(
+                user=admin,
+                title="New Loan Group Created",
+                message=f"Group '{getattr(group, 'name', group.id)}' created",
+                level="info",
+                link="/group-loans",
+            )
 
 
 class LoanGroupDetailView(generics.RetrieveUpdateAPIView):
@@ -119,10 +137,8 @@ class GroupMembersView(APIView):
             GroupMembershipSerializer(memberships, many=True).data
         )
 
-    
     @transaction.atomic
     def post(self, request, group_id):
-        # 1. Verify group
         group = LoanGroup.objects.select_for_update().filter(
             pk=group_id
         ).first()
@@ -138,7 +154,6 @@ class GroupMembersView(APIView):
                 "Members cannot be changed after group activation."
             )
 
-        # 2. Verify customer ID
         customer_id = request.data.get("customer")
 
         if not customer_id:
@@ -163,14 +178,12 @@ class GroupMembersView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # 3. Prevent duplicate membership
         if group.memberships.filter(customer=customer).exists():
             return Response(
                 {"detail": "Customer is already in this group."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 4. Check plan member limit
         count = group.memberships.filter(is_active=True).count()
 
         if count >= group.plan.max_members:
@@ -179,17 +192,26 @@ class GroupMembersView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 5. Create membership
         membership = GroupMembership.objects.create(
             group=group,
             customer=customer,
             is_leader=request.data.get("is_leader", False),
         )
 
+        for admin in get_admins():
+            notify_user(
+                user=admin,
+                title="Member Added to Group",
+                message=f"{customer.first_name} added to group '{group.name}'",
+                level="info",
+                link="/group-loans",
+            )
+
         return Response(
             GroupMembershipSerializer(membership).data,
             status=status.HTTP_201_CREATED,
         )
+
 
 MONEY = Decimal("0.01")
 
@@ -310,7 +332,6 @@ class GroupLoanApplicationListCreateView(APIView):
                     "Total requested amount exceeds the plan's group limit."
             })
 
-        # Avoid multiple open applications for the same group.
         if GroupLoanApplication.objects.filter(
             group=group,
             status__in=["submitted", "approved", "disbursed"],
@@ -332,6 +353,15 @@ class GroupLoanApplicationListCreateView(APIView):
 
         group.status = "pending"
         group.save(update_fields=["status"])
+
+        for admin in get_admins():
+            notify_user(
+                user=admin,
+                title="New Group Loan Application",
+                message=f"Group '{group.name}' applied for ₹{total}",
+                level="info",
+                link="/group-loans",
+            )
 
         return Response(
             GroupLoanApplicationSerializer(application).data,
@@ -367,12 +397,23 @@ class GroupLoanDecisionView(APIView):
         application.decision_notes = notes
         application.decided_at = timezone.now()
 
+        group_name = application.group.name
+
         if decision == "rejected":
             application.status = "rejected"
             application.save()
+
+            for admin in get_admins():
+                notify_user(
+                    user=admin,
+                    title="Group Loan Rejected",
+                    message=f"Application for group '{group_name}' was rejected",
+                    level="warning",
+                    link="/group-loans",
+                )
+
             return Response(GroupLoanApplicationSerializer(application).data)
 
-        # Recheck KYC and member count at decision time.
         validate_group_kyc(application.group)
 
         try:
@@ -409,6 +450,15 @@ class GroupLoanDecisionView(APIView):
         application.status = "approved"
         application.save()
 
+        for admin in get_admins():
+            notify_user(
+                user=admin,
+                title="Group Loan Approved",
+                message=f"Group '{group_name}' approved for ₹{approved_total}",
+                level="success",
+                link="/group-loans",
+            )
+
         return Response(GroupLoanApplicationSerializer(application).data)
 
 
@@ -426,7 +476,6 @@ def next_due_date(start, frequency):
     if frequency == "fortnightly":
         return start + timedelta(days=15)
 
-    # Keep the date near the same day in the following month.
     import calendar
     year = start.year + (start.month // 12)
     month = start.month % 12 + 1
@@ -483,7 +532,6 @@ def calculate_schedule(application, start_date):
 
         return rows
 
-    # Reducing balance EMI: periodic rate derived from annual rate.
     periods_per_year = {
         "weekly": Decimal("52"),
         "fortnightly": Decimal("24"),
@@ -541,7 +589,6 @@ class GroupLoanScheduleView(APIView):
                 "Only approved loans can generate an EMI schedule."
             )
 
-        # If schedule already exists, return it instead of creating again.
         existing_installments = application.installments.all().order_by(
             "installment_number"
         )
@@ -558,7 +605,6 @@ class GroupLoanScheduleView(APIView):
                 ).data,
             }, status=status.HTTP_200_OK)
 
-        # Validate members and KYC before creating schedule.
         members = validate_group_kyc(application.group)
 
         if not members:
@@ -567,8 +613,6 @@ class GroupLoanScheduleView(APIView):
         start_date_raw = request.data.get("first_due_date")
 
         if start_date_raw:
-            from django.utils.dateparse import parse_date
-
             first_due_date = parse_date(start_date_raw)
 
             if not first_due_date:
@@ -583,7 +627,6 @@ class GroupLoanScheduleView(APIView):
             first_due_date,
         )
 
-        # Create group-level EMI installments.
         installments = [
             GroupLoanInstallment(
                 application=application,
@@ -614,7 +657,6 @@ class GroupLoanScheduleView(APIView):
 
             for index, membership in enumerate(members):
 
-                # Last member receives rounding remainder.
                 if index == member_count - 1:
                     member_principal = money(
                         installment.principal_due - allocated_principal
@@ -644,6 +686,15 @@ class GroupLoanScheduleView(APIView):
         GroupLoanMemberInstallment.objects.bulk_create(
             member_installments
         )
+
+        for admin in get_admins():
+            notify_user(
+                user=admin,
+                title="EMI Schedule Generated",
+                message=f"Schedule created for group '{application.group.name}' ({len(rows)} installments)",
+                level="info",
+                link="/group-loans",
+            )
 
         return Response({
             "detail": "EMI schedule generated successfully.",
@@ -704,12 +755,23 @@ class GroupLoanDisbursementView(APIView):
         group.status = "active"
         group.save(update_fields=["status"])
 
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="Group Loan Disbursed",
+                message=f"Group '{group.name}' loan disbursed — ₹{application.approved_total}",
+                level="success",
+                link="/approved-loans",
+            )
+
         return Response({
             "detail": "Loan marked as disbursed.",
             "application": GroupLoanApplicationSerializer(
                 application
             ).data,
         }, status=status.HTTP_200_OK)
+
+
 @transaction.atomic
 def close_loan_if_fully_paid(application):
     installments = list(
@@ -734,7 +796,6 @@ def close_loan_if_fully_paid(application):
         return True
 
     return False
-
 
 
 class GroupLoanPaymentView(APIView):
@@ -795,11 +856,28 @@ class GroupLoanPaymentView(APIView):
 
         installment.save(update_fields=["paid_amount", "status"])
 
-        # Check all 12 EMIs after updating the current EMI.
         loan_closed = close_loan_if_fully_paid(application)
 
         application.refresh_from_db()
         installment.refresh_from_db()
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="Group Loan Payment Received",
+                message=f"₹{amount} paid on installment #{installment.installment_number} — group '{application.group.name}'",
+                level="success",
+                link="/collections",
+            )
+
+            if loan_closed:
+                notify_user(
+                    user=admin,
+                    title="Group Loan Closed",
+                    message=f"Group '{application.group.name}' loan fully paid and closed",
+                    level="success",
+                    link="/group-loans",
+                )
 
         return Response({
             "detail": (
@@ -814,6 +892,7 @@ class GroupLoanPaymentView(APIView):
             "loan_status": application.status,
             "loan_closed": loan_closed,
         }, status=status.HTTP_201_CREATED)
+
 
 class GroupLoanInstallmentListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -906,7 +985,6 @@ class GroupCollectionView(APIView):
     @transaction.atomic
     def post(self, request, application_id):
 
-        # 1. Lock application
         application = get_object_or_404(
             GroupLoanApplication.objects
             .select_for_update()
@@ -919,7 +997,6 @@ class GroupCollectionView(APIView):
                 "Collection is allowed only after loan disbursement."
             )
 
-        # 2. Validate allocations
         allocations_data = request.data.get("allocations")
 
         if not isinstance(allocations_data, list) or not allocations_data:
@@ -937,7 +1014,6 @@ class GroupCollectionView(APIView):
                 "Collection amount must be greater than zero."
             )
 
-        # 3. Validate payment method
         payment_method = request.data.get("payment_method", "cash")
 
         allowed_methods = ["cash", "upi", "bank", "other"]
@@ -947,7 +1023,6 @@ class GroupCollectionView(APIView):
                 "payment_method": "Choose cash, upi, bank or other."
             })
 
-        # 4. Validate payment date
         payment_date = parse_date(
             request.data.get(
                 "payment_date",
@@ -960,7 +1035,6 @@ class GroupCollectionView(APIView):
                 "payment_date": "Use YYYY-MM-DD format."
             })
 
-        # 5. Validate every member allocation before saving
         parsed_allocations = []
         allocation_total = Decimal("0.00")
         seen_ids = set()
@@ -1028,7 +1102,6 @@ class GroupCollectionView(APIView):
                 )
             })
 
-        # 6. Create one group collection receipt
         collection = GroupCollection.objects.create(
             application=application,
             amount=total_amount,
@@ -1043,7 +1116,6 @@ class GroupCollectionView(APIView):
             ),
         )
 
-        # 7. Save individual member allocations
         affected_installment_ids = set()
 
         for member_emi, amount in parsed_allocations:
@@ -1074,7 +1146,6 @@ class GroupCollectionView(APIView):
                 member_emi.installment_id
             )
 
-        # 8. Update group-level EMI totals
         for installment_id in affected_installment_ids:
 
             group_installment = (
@@ -1121,12 +1192,10 @@ class GroupCollectionView(APIView):
                 ]
             )
 
-        # 9. IMPORTANT: Check loan closure AFTER updating all EMIs
         loan_closed = close_loan_if_fully_paid(application)
 
         application.refresh_from_db()
 
-        # 10. Fetch updated receipt
         collection = (
             GroupCollection.objects
             .prefetch_related(
@@ -1134,6 +1203,26 @@ class GroupCollectionView(APIView):
             )
             .get(pk=collection.pk)
         )
+
+        receipt_no = getattr(collection, "receipt_number", collection.id)
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="Group Collection Recorded",
+                message=f"₹{total_amount} collected for group '{application.group.name}' (Receipt: {receipt_no})",
+                level="success",
+                link="/collections",
+            )
+
+            if loan_closed:
+                notify_user(
+                    user=admin,
+                    title="Group Loan Closed",
+                    message=f"Group '{application.group.name}' loan fully paid and closed",
+                    level="success",
+                    link="/group-loans",
+                )
 
         return Response({
             "detail": (
