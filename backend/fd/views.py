@@ -2,9 +2,13 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 from accounts.permissions import IsRD_FD_Admin, IsSuperAdmin
+from notifications.utils import notify_user
 from .models import FDProduct, FDAccount, FDTransaction
 from .serializers import FDProductSerializer, FDAccountSerializer
+
+User = get_user_model()
 
 
 # ==================== PRODUCT (Super Admin only) ====================
@@ -29,6 +33,23 @@ class FDAccountListCreateView(generics.ListCreateAPIView):
     serializer_class = FDAccountSerializer
     permission_classes = [IsRD_FD_Admin]
 
+    def perform_create(self, serializer):
+        account = serializer.save()
+
+        # Notify Super Admins + RD/FD Admins
+        admins = User.objects.filter(
+            profile__role__in=["SUPER_ADMIN", "RD_FD_ADMIN"]
+        )
+
+        for admin in admins:
+            notify_user(
+                user=admin,
+                title="New FD Account Opened",
+                message=f"FD Account {getattr(account, 'account_number', account.id)} has been created",
+                level="info",
+                link="/fd",
+            )
+
 
 class FDAccountDetailView(generics.RetrieveUpdateAPIView):
     queryset = FDAccount.objects.select_related("product").all()
@@ -46,7 +67,10 @@ class FDAccountApproveView(APIView):
             return Response({"detail": "Not found"}, status=404)
 
         if fd.status != "PENDING":
-            return Response({"detail": "Only pending accounts can be approved"}, status=400)
+            return Response(
+                {"detail": "Only pending accounts can be approved"},
+                status=400,
+            )
 
         fd.status = "ACTIVE"
         fd.approved_by = request.user
@@ -60,8 +84,32 @@ class FDAccountApproveView(APIView):
             amount=fd.deposit_amount,
             transaction_date=fd.start_date,
             created_by=request.user,
-            remarks="Initial deposit"
+            remarks="Initial deposit",
         )
+
+        # Notify the creator (if available)
+        if hasattr(fd, "created_by") and fd.created_by:
+            notify_user(
+                user=fd.created_by,
+                title="FD Account Approved",
+                message=f"Your FD Account {fd.account_number} has been approved",
+                level="success",
+                link="/fd",
+            )
+
+        # Notify other admins
+        admins = User.objects.filter(
+            profile__role__in=["SUPER_ADMIN", "RD_FD_ADMIN"]
+        ).exclude(id=request.user.id)
+
+        for admin in admins:
+            notify_user(
+                user=admin,
+                title="FD Account Approved",
+                message=f"FD Account {fd.account_number} approved by {request.user.username}",
+                level="success",
+                link="/fd",
+            )
 
         return Response({"detail": "FD Account approved successfully"})
 
@@ -76,20 +124,27 @@ class FDPrematureCloseView(APIView):
             return Response({"detail": "Not found"}, status=404)
 
         if fd.status != "ACTIVE":
-            return Response({"detail": "Only active FD can be closed"}, status=400)
+            return Response(
+                {"detail": "Only active FD can be closed"}, status=400
+            )
 
-        # Simple penalty calculation (you can improve later)
+        # Simple penalty calculation
         penalty = 0
         if fd.product.premature_allowed:
             if fd.product.penalty_type == "PERCENT_INTEREST":
-                # example logic
-                penalty = (fd.maturity_amount - fd.deposit_amount) * (fd.product.penalty_value / 100)
+                penalty = (fd.maturity_amount - fd.deposit_amount) * (
+                    fd.product.penalty_value / 100
+                )
             elif fd.product.penalty_type == "PERCENT_PRINCIPAL":
                 penalty = fd.deposit_amount * (fd.product.penalty_value / 100)
             else:
                 penalty = fd.product.penalty_value
 
-        payout = fd.deposit_amount + (fd.maturity_amount - fd.deposit_amount) - penalty
+        payout = (
+            fd.deposit_amount
+            + (fd.maturity_amount - fd.deposit_amount)
+            - penalty
+        )
 
         fd.status = "PREMATURE_CLOSED"
         fd.save()
@@ -100,11 +155,27 @@ class FDPrematureCloseView(APIView):
             amount=payout,
             transaction_date=timezone.now().date(),
             created_by=request.user,
-            remarks=f"Premature closure. Penalty: {penalty}"
+            remarks=f"Premature closure. Penalty: {penalty}",
         )
 
-        return Response({
-            "detail": "FD closed prematurely",
-            "payout_amount": payout,
-            "penalty": penalty
-        })
+        # Notify admins
+        admins = User.objects.filter(
+            profile__role__in=["SUPER_ADMIN", "RD_FD_ADMIN"]
+        )
+
+        for admin in admins:
+            notify_user(
+                user=admin,
+                title="FD Premature Closure",
+                message=f"FD {fd.account_number} closed. Payout: ₹{payout}",
+                level="warning",
+                link="/fd",
+            )
+
+        return Response(
+            {
+                "detail": "FD closed prematurely",
+                "payout_amount": payout,
+                "penalty": penalty,
+            }
+        )
