@@ -1,4 +1,3 @@
-
 import calendar
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
@@ -8,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from notifications.utils import notify_user
 from .models import (
     Customer, CustomerKYC, LoanApplication,
     Loan, EMISchedule, Collection,
@@ -24,6 +25,15 @@ from .serializers import (
     KYCVerificationSerializer, LoanApplicationSerializer,
     LoanSerializer, EMIScheduleSerializer, CollectionSerializer,
 )
+
+User = get_user_model()
+
+
+def get_admins(roles=None):
+    """Helper to get admin users by role."""
+    if roles is None:
+        roles = ["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]
+    return User.objects.filter(profile__role__in=roles)
 
 
 class CustomerListCreateView(generics.ListCreateAPIView):
@@ -48,6 +58,19 @@ class CustomerListCreateView(generics.ListCreateAPIView):
 
         return qs
 
+    def perform_create(self, serializer):
+        customer = serializer.save()
+
+        # Notify admins about new customer
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="New Customer Registered",
+                message=f"{customer.first_name} {customer.last_name or ''} ({customer.mobile_number}) registered",
+                level="info",
+                link="/customers",
+            )
+
 
 class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.all()
@@ -69,7 +92,16 @@ class CustomerKYCListCreateView(generics.ListCreateAPIView):
         customer = get_object_or_404(
             Customer, pk=self.kwargs["customer_id"]
         )
-        serializer.save(customer=customer)
+        kyc = serializer.save(customer=customer)
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="KYC Document Uploaded",
+                message=f"New KYC ({kyc.document_type}) uploaded for {customer.first_name}",
+                level="info",
+                link="/customers",
+            )
 
 
 class KYCVerificationView(APIView):
@@ -90,6 +122,18 @@ class KYCVerificationView(APIView):
         kyc.verified_by = str(request.user)
         kyc.verified_at = timezone.now()
         kyc.save()
+
+        customer = kyc.customer
+        status_label = kyc.status.upper()
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title=f"KYC {status_label}",
+                message=f"KYC ({kyc.document_type}) for {customer.first_name} marked as {kyc.status}",
+                level="success" if kyc.status == "verified" else "warning",
+                link="/customers",
+            )
 
         return Response(CustomerKYCSerializer(kyc).data)
 
@@ -113,7 +157,6 @@ class LoanApplicationListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         customer = serializer.validated_data["customer"]
 
-        # Require at least one verified identity and address document.
         docs = CustomerKYC.objects.filter(
             customer=customer, status="verified"
         )
@@ -125,9 +168,19 @@ class LoanApplicationListCreateView(generics.ListCreateAPIView):
                 "Verified identity and address KYC are required."
             )
 
-        serializer.save(
+        application = serializer.save(
             application_number=f"APP-{uuid4().hex[:12].upper()}"
         )
+
+        # Notify loan admins
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]):
+            notify_user(
+                user=admin,
+                title="New Loan Application",
+                message=f"{application.application_number} submitted by {customer.first_name} {customer.last_name or ''}",
+                level="info",
+                link="/group-loans",
+            )
 
 
 class LoanApplicationDetailView(generics.RetrieveUpdateAPIView):
@@ -152,6 +205,8 @@ class LoanApplicationDecisionView(APIView):
         if application.status not in ["pending", "under_review"]:
             raise ValidationError("Application already finalized.")
 
+        customer_name = f"{application.customer.first_name} {application.customer.last_name or ''}".strip()
+
         if decision == "reject":
             if not reason.strip():
                 raise ValidationError(
@@ -160,6 +215,16 @@ class LoanApplicationDecisionView(APIView):
             application.status = "rejected"
             application.rejection_reason = reason
             application.save()
+
+            for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]):
+                notify_user(
+                    user=admin,
+                    title="Loan Application Rejected",
+                    message=f"{application.application_number} ({customer_name}) rejected",
+                    level="warning",
+                    link="/group-loans",
+                )
+
             return Response(LoanApplicationSerializer(application).data)
 
         if decision != "approve":
@@ -186,6 +251,15 @@ class LoanApplicationDecisionView(APIView):
             tenure_installments=application.tenure_installments,
             repayment_frequency=application.repayment_frequency,
         )
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN"]):
+            notify_user(
+                user=admin,
+                title="Loan Application Approved",
+                message=f"{application.application_number} ({customer_name}) approved — ₹{application.requested_amount}",
+                level="success",
+                link="/group-loans",
+            )
 
         return Response(
             LoanSerializer(loan).data,
@@ -233,7 +307,6 @@ class LoanDisbursementView(APIView):
         )
         period_rate = rate / periods_per_year
 
-        # Reducing-balance annuity installment calculation.
         if period_rate == 0:
             regular_payment = principal / Decimal(count)
         else:
@@ -265,8 +338,6 @@ class LoanDisbursementView(APIView):
             else:
                 payment_due = regular_payment
                 principal_part = payment_due - interest
-
-                # Guard against rounding issues.
                 principal_part = min(principal_part, balance)
                 payment_due = principal_part + interest
 
@@ -285,6 +356,18 @@ class LoanDisbursementView(APIView):
         loan.disbursed_at = timezone.now()
         loan.disbursement_reference = reference
         loan.save()
+
+        customer = loan.application.customer
+        customer_name = f"{customer.first_name} {customer.last_name or ''}".strip()
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="Loan Disbursed",
+                message=f"Loan for {customer_name} disbursed — ₹{loan.approved_amount} (Ref: {reference})",
+                level="success",
+                link="/approved-loans",
+            )
 
         return Response(LoanSerializer(loan).data)
 
@@ -323,3 +406,27 @@ class CollectionListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(installment__loan_id=loan_id)
 
         return qs
+
+    def perform_create(self, serializer):
+        collection = serializer.save()
+
+        amount = getattr(collection, "amount", None) or getattr(collection, "collected_amount", "")
+        loan = None
+        try:
+            loan = collection.installment.loan
+        except Exception:
+            pass
+
+        customer_name = ""
+        if loan and hasattr(loan, "application"):
+            c = loan.application.customer
+            customer_name = f"{c.first_name} {c.last_name or ''}".strip()
+
+        for admin in get_admins(["SUPER_ADMIN", "GROUP_LOAN_ADMIN", "BRANCH_MANAGER"]):
+            notify_user(
+                user=admin,
+                title="Collection Recorded",
+                message=f"₹{amount} collected{f' from {customer_name}' if customer_name else ''}",
+                level="success",
+                link="/collections",
+            )
