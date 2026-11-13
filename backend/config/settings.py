@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'rd',
     'fd',
     'collection',
+    'notifications',
 ]
 
 MIDDLEWARE = [
