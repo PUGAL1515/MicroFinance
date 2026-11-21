@@ -31,7 +31,6 @@ class CollectionFollowUp(models.Model):
         choices=STATUS_CHOICES,
         default="pending",
     )
-
     remarks = models.TextField(blank=True)
 
     created_by = models.ForeignKey(
