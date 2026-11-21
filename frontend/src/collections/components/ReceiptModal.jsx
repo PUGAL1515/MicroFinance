@@ -7,7 +7,14 @@ const ReceiptModal = ({ receipt, onClose }) => {
   const printReceipt = () => {
     window.print();
   };
-
+const receiptAmount = Number(
+  receipt.amount ??
+  receipt.total_amount ??
+  receipt.collected_amount ??
+  receipt.payment_amount ??
+  receipt.paid_amount ??
+  0
+);
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm">
       <div className="collection-modal-enter max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
@@ -66,9 +73,10 @@ const ReceiptModal = ({ receipt, onClose }) => {
 
           <p className="text-sm text-slate-500">Amount Received</p>
           <h2 className="mt-2 text-3xl font-extrabold text-emerald-600">
-            ₹{Number(receipt.amount || 0).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            })}
+           ₹{receiptAmount.toLocaleString("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})}
           </h2>
 
           <p className="mt-5 text-xs text-slate-400">
