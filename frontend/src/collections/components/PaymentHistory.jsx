@@ -2,9 +2,21 @@
 import { useState } from "react";
 import { Search, Receipt, CalendarDays } from "lucide-react";
 
+const getPaymentAmount = (item) => {
+  return Number(
+    item?.amount ??
+    item?.total_amount ??
+    item?.collected_amount ??
+    item?.payment_amount ??
+    item?.paid_amount ??
+    0
+  );
+};
+
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`;
 
 const PaymentHistory = ({ payments = [], onViewReceipt }) => {
@@ -98,7 +110,7 @@ const PaymentHistory = ({ payments = [], onViewReceipt }) => {
               <div className="flex items-center justify-between gap-4 sm:justify-end">
                 <div>
                   <p className="text-lg font-bold text-emerald-600">
-                    {money(item.amount)}
+                   {money(getPaymentAmount(item))}
                   </p>
                   <p className="text-xs capitalize text-slate-400">
                     {item.payment_method}
