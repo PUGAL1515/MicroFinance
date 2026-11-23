@@ -9,6 +9,10 @@ from .views import (
     ReceiptDetailView,
     OverdueListView,
     FollowUpView,
+    FDRDSummaryView,
+    FDAccountListView,
+    RDAccountListView,
+    RDCollectionReportView,
 )
 
 
@@ -54,4 +58,8 @@ urlpatterns = [
         FollowUpView.as_view(),
         name="collection-follow-ups",
     ),
+    path("fd-rd/summary/", FDRDSummaryView.as_view(), name="fd-rd-summary"),
+    path("fd-rd/fd-accounts/", FDAccountListView.as_view(), name="fd-accounts-report"),
+    path("fd-rd/rd-accounts/", RDAccountListView.as_view(), name="rd-accounts-report"),
+    path("fd-rd/rd-collections/", RDCollectionReportView.as_view(), name="rd-collections-report"),
 ]

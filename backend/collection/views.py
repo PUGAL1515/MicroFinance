@@ -338,3 +338,242 @@ class FollowUpView(APIView):
             serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
+from decimal import Decimal
+from django.db.models import Sum, Count, Q
+from django.utils import timezone
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny  # change later to IsAuthenticated
+
+from fd.models import FDAccount, FDTransaction   # adjust app name if different
+from rd.models import RDAccount, RDCollection   # adjust app name if different
+
+
+class FDRDSummaryView(APIView):
+    """
+    Summary cards for FD + RD
+    GET /api/reports/fd-rd/summary/
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        today = timezone.localdate()
+
+        # ---------- FD ----------
+        fd_qs = FDAccount.objects.all()
+
+        fd_active = fd_qs.filter(status="ACTIVE")
+        fd_matured = fd_qs.filter(status="MATURED")
+        fd_premature = fd_qs.filter(status="PREMATURE_CLOSED")
+        fd_closed = fd_qs.filter(status="CLOSED")
+
+        fd_active_amount = fd_active.aggregate(total=Sum("deposit_amount"))["total"] or Decimal("0")
+        fd_matured_amount = fd_matured.aggregate(total=Sum("maturity_amount"))["total"] or Decimal("0")
+        fd_premature_amount = fd_premature.aggregate(total=Sum("deposit_amount"))["total"] or Decimal("0")
+
+        # ---------- RD ----------
+        rd_qs = RDAccount.objects.all()
+
+        rd_active = rd_qs.filter(status="ACTIVE")
+        rd_matured = rd_qs.filter(status="MATURED")
+        rd_premature = rd_qs.filter(status="PREMATURE_CLOSED")
+        rd_closed = rd_qs.filter(status="CLOSED")
+
+        rd_active_amount = rd_active.aggregate(total=Sum("total_paid"))["total"] or Decimal("0")
+        rd_matured_amount = rd_matured.aggregate(total=Sum("expected_maturity_amount"))["total"] or Decimal("0")
+        rd_premature_amount = rd_premature.aggregate(total=Sum("total_paid"))["total"] or Decimal("0")
+
+        return Response({
+            "date": today,
+            "fd": {
+                "active_count": fd_active.count(),
+                "active_amount": fd_active_amount,
+                "matured_count": fd_matured.count(),
+                "matured_amount": fd_matured_amount,
+                "premature_count": fd_premature.count(),
+                "premature_amount": fd_premature_amount,
+                "closed_count": fd_closed.count(),
+            },
+            "rd": {
+                "active_count": rd_active.count(),
+                "active_amount": rd_active_amount,
+                "matured_count": rd_matured.count(),
+                "matured_amount": rd_matured_amount,
+                "premature_count": rd_premature.count(),
+                "premature_amount": rd_premature_amount,
+                "closed_count": rd_closed.count(),
+            },
+            "combined": {
+                "active_count": fd_active.count() + rd_active.count(),
+                "active_amount": fd_active_amount + rd_active_amount,
+                "matured_count": fd_matured.count() + rd_matured.count(),
+                "premature_count": fd_premature.count() + rd_premature.count(),
+            }
+        })
+
+
+class FDAccountListView(APIView):
+    """
+    List FD accounts with filters
+    GET /api/reports/fd-rd/fd-accounts/?status=ACTIVE&date_from=...&date_to=...
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = FDAccount.objects.select_related("product", "customer", "created_by").all()
+
+        status_param = request.query_params.get("status")
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        search = request.query_params.get("search", "").strip()
+
+        if status_param:
+            qs = qs.filter(status=status_param.upper())
+
+        if date_from:
+            qs = qs.filter(start_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(start_date__lte=date_to)
+
+        if search:
+            qs = qs.filter(
+                Q(account_number__icontains=search) |
+                Q(customer__first_name__icontains=search) |
+                Q(customer__last_name__icontains=search) |
+                Q(customer__full_name__icontains=search)  # if you have full_name
+            )
+
+        data = []
+        for acc in qs.order_by("-created_at")[:500]:  # limit for safety
+            customer_name = "—"
+            if acc.customer:
+                customer_name = getattr(acc.customer, "get_full_name", lambda: None)() or \
+                                f"{getattr(acc.customer, 'first_name', '')} {getattr(acc.customer, 'last_name', '')}".strip() or \
+                                str(acc.customer)
+
+            data.append({
+                "id": acc.id,
+                "account_number": acc.account_number,
+                "customer": customer_name,
+                "product": acc.product.name if acc.product else "—",
+                "deposit_amount": acc.deposit_amount,
+                "interest_rate": acc.interest_rate,
+                "start_date": acc.start_date,
+                "maturity_date": acc.maturity_date,
+                "maturity_amount": acc.maturity_amount,
+                "status": acc.status,
+                "tenure_value": acc.tenure_value,
+            })
+
+        return Response({
+            "count": len(data),
+            "results": data,
+        })
+
+
+class RDAccountListView(APIView):
+    """
+    List RD accounts with filters
+    GET /api/reports/fd-rd/rd-accounts/?status=ACTIVE&date_from=...&date_to=...
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = RDAccount.objects.select_related("product", "customer", "created_by").all()
+
+        status_param = request.query_params.get("status")
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        search = request.query_params.get("search", "").strip()
+
+        if status_param:
+            qs = qs.filter(status=status_param.upper())
+
+        if date_from:
+            qs = qs.filter(start_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(start_date__lte=date_to)
+
+        if search:
+            qs = qs.filter(
+                Q(account_number__icontains=search) |
+                Q(customer__first_name__icontains=search) |
+                Q(customer__last_name__icontains=search)
+            )
+
+        data = []
+        for acc in qs.order_by("-created_at")[:500]:
+            customer_name = "—"
+            if acc.customer:
+                customer_name = getattr(acc.customer, "get_full_name", lambda: None)() or \
+                                f"{getattr(acc.customer, 'first_name', '')} {getattr(acc.customer, 'last_name', '')}".strip() or \
+                                str(acc.customer)
+
+            data.append({
+                "id": acc.id,
+                "account_number": acc.account_number,
+                "customer": customer_name,
+                "product": acc.product.name if acc.product else "—",
+                "monthly_instalment": acc.monthly_instalment,
+                "tenure_months": acc.tenure_months,
+                "interest_rate": acc.interest_rate,
+                "start_date": acc.start_date,
+                "maturity_date": acc.maturity_date,
+                "expected_maturity_amount": acc.expected_maturity_amount,
+                "total_paid": acc.total_paid,
+                "total_instalments_paid": acc.total_instalments_paid,
+                "status": acc.status,
+            })
+
+        return Response({
+            "count": len(data),
+            "results": data,
+        })
+
+
+class RDCollectionReportView(APIView):
+    """
+    RD Collection report (payments received)
+    GET /api/reports/fd-rd/rd-collections/?date_from=...&date_to=...
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = RDCollection.objects.filter(is_reversed=False).select_related(
+            "instalment__rd_account__customer",
+            "collected_by"
+        )
+
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+
+        if date_from:
+            qs = qs.filter(collection_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(collection_date__lte=date_to)
+
+        total = qs.aggregate(total=Sum("amount"))["total"] or Decimal("0")
+
+        data = []
+        for col in qs.order_by("-collection_date")[:500]:
+            customer = "—"
+            if col.instalment and col.instalment.rd_account and col.instalment.rd_account.customer:
+                c = col.instalment.rd_account.customer
+                customer = getattr(c, "get_full_name", lambda: None)() or str(c)
+
+            data.append({
+                "receipt_number": col.receipt_number,
+                "customer": customer,
+                "account_number": col.instalment.rd_account.account_number if col.instalment else "—",
+                "amount": col.amount,
+                "payment_mode": col.payment_mode,
+                "collection_date": col.collection_date,
+                "collected_by": str(col.collected_by) if col.collected_by else "—",
+            })
+
+        return Response({
+            "count": len(data),
+            "total_collected": total,
+            "results": data,
+        })        
